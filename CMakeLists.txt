@@ -1,74 +1,42 @@
 cmake_minimum_required(VERSION 3.15)
-project(f2c LANGUAGES C)
+project(f2c VERSION 0.1 LANGUAGES C)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(FetchAndUnpack)
+fetch_and_unpack_configure_dirs()
 
 # Options
 option(ENABLE_SANITIZERS "Enable Address/UB sanitizers for dev builds" OFF)
 option(NET_FETCH "Allow network fetch if local tarballs are missing" ON)
 
-# Tarball directory (users can override)
-set(TARBALL_DIR "${CMAKE_SOURCE_DIR}/third_party/tarballs" CACHE PATH "Local tarballs directory")
-file(MAKE_DIRECTORY "${TARBALL_DIR}")
-
-# Upstream locations and checksums (fill real SHA256 values)
-set(F2C_SRC_URL   "https://www.netlib.org/f2c/src.tgz")
-set(LIBF2C_URL    "https://www.netlib.org/f2c/libf2c.zip")
-set(F2C_SRC_SHA256   "b2824a6f7b75ffe0193ce9ba55463191a7af7c2ffe10e371e372451e2b527e09")
-set(LIBF2C_SHA256    "cc84253b47b5c036aa1d529332a6c218a39ff71c76974296262b03776f822695")
-
-# Helper: resolve a file from local hint or download to build/_dl
-function(resolve_input_file OUT_VAR URL SHA LOCAL_HINT)
-  get_filename_component(_name "${URL}" NAME)
-  if(EXISTS "${LOCAL_HINT}")
-    set(${OUT_VAR} "${LOCAL_HINT}" PARENT_SCOPE)
-    return()
-  endif()
-  if(NET_FETCH)
-    set(_dl "${CMAKE_BINARY_DIR}/_dl")
-    file(MAKE_DIRECTORY "${_dl}")
-    set(_dest "${_dl}/${_name}")
-    if(NOT EXISTS "${_dest}")
-      message(STATUS "Downloading ${URL} -> ${_dest}")
-      file(DOWNLOAD "${URL}" "${_dest}" SHOW_PROGRESS EXPECTED_HASH "SHA256=${SHA}")
-    else()
-      message(STATUS "Using cached download: ${_dest}")
-    endif()
-    set(${OUT_VAR} "${_dest}" PARENT_SCOPE)
-  else()
-    message(FATAL_ERROR "Required file not found and NET_FETCH=OFF. Please place it at: ${LOCAL_HINT}")
-  endif()
-endfunction()
-
-# Resolve archives (prefer local; else download)
-set(F2C_SRC_LOCAL   "${TARBALL_DIR}/src.tgz")
-set(LIBF2C_LOCAL    "${TARBALL_DIR}/libf2c.zip")
-resolve_input_file(F2C_SRC_TGZ  "${F2C_SRC_URL}"  "${F2C_SRC_SHA256}"  "${F2C_SRC_LOCAL}")
-resolve_input_file(LIBF2C_ZIP   "${LIBF2C_URL}"   "${LIBF2C_SHA256}"   "${LIBF2C_LOCAL}")
-
-# Unpack archives into the build tree (vendor directories)
+set(PACKAGE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
 set(VENDOR_ROOT "${CMAKE_BINARY_DIR}/vendor")
-set(F2C_SRC_ROOT "${VENDOR_ROOT}/f2c_src")
-set(LIBF2C_ROOT  "${VENDOR_ROOT}/libf2c")
 
-add_custom_command(OUTPUT "${F2C_SRC_ROOT}.stamp"
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${F2C_SRC_ROOT}"
-  COMMAND ${CMAKE_COMMAND} -E chdir "${F2C_SRC_ROOT}" ${CMAKE_COMMAND} -E tar xzf "${F2C_SRC_TGZ}"
-  COMMAND ${CMAKE_COMMAND} -E touch "${F2C_SRC_ROOT}.stamp"
-  DEPENDS "${F2C_SRC_TGZ}"
+# f2c source archive (src.tgz)
+set(F2C_SRC_ROOT    "${VENDOR_ROOT}/f2c_src")
+set(F2C_SRC_URL     "https://www.netlib.org/f2c/src.tgz")
+set(F2C_SRC_SHA256  "b2824a6f7b75ffe0193ce9ba55463191a7af7c2ffe10e371e372451e2b527e09")
+set(F2C_SRC_LOCAL   "${ARCHIVE_DIR}/src.tgz")
+resolve_input_file(F2C_SRC_TGZ  "${F2C_SRC_URL}"  "${F2C_SRC_SHA256}"  "${F2C_SRC_LOCAL}")
+add_unpack_archive("${F2C_SRC_ROOT}.stamp" "${F2C_SRC_ROOT}" "${F2C_SRC_TGZ}"
   COMMENT "Unpacking src.tgz"
-  VERBATIM)
+  COMMAND ${CMAKE_COMMAND} -E tar xzf)
 
-add_custom_command(OUTPUT "${LIBF2C_ROOT}.stamp"
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${LIBF2C_ROOT}"
-  COMMAND ${CMAKE_COMMAND} -E chdir "${LIBF2C_ROOT}" ${CMAKE_COMMAND} -E tar xvf "${LIBF2C_ZIP}"
-  COMMAND ${CMAKE_COMMAND} -E touch "${LIBF2C_ROOT}.stamp"
-  DEPENDS "${LIBF2C_ZIP}"
+# libf2c runtime archive (libf2c.zip)
+set(LIBF2C_ROOT     "${VENDOR_ROOT}/libf2c")
+set(LIBF2C_URL      "https://www.netlib.org/f2c/libf2c.zip")
+set(LIBF2C_SHA256   "cc84253b47b5c036aa1d529332a6c218a39ff71c76974296262b03776f822695")
+set(LIBF2C_LOCAL    "${ARCHIVE_DIR}/libf2c.zip")
+resolve_input_file(LIBF2C_ZIP   "${LIBF2C_URL}"   "${LIBF2C_SHA256}"   "${LIBF2C_LOCAL}")
+add_unpack_archive("${LIBF2C_ROOT}.stamp" "${LIBF2C_ROOT}" "${LIBF2C_ZIP}"
   COMMENT "Unpacking libf2c.zip"
-  VERBATIM)
+  COMMAND ${CMAKE_COMMAND} -E tar xvf)
 
-add_custom_target(unpack ALL
-  DEPENDS "${F2C_SRC_ROOT}.stamp" "${LIBF2C_ROOT}.stamp")
+add_unpack_target(unpack)
 
 # Now point to the extracted sources
 set(F2C_SRC_DIR "${F2C_SRC_ROOT}/src")
@@ -242,6 +210,29 @@ add_custom_command(
 add_custom_target(check_xsum DEPENDS "${CMAKE_BINARY_DIR}/xsum.out")
 
 # ---------------------------------------------------------------------------
+# Package config generation
+# ---------------------------------------------------------------------------
+set(_PKG_CONFIG_IN "${CMAKE_SOURCE_DIR}/ProjectConfig.cmake.in")
+if(NOT EXISTS "${_PKG_CONFIG_IN}")
+  set(_PKG_CONFIG_IN "${CMAKE_SOURCE_DIR}/cmake/ProjectConfig.cmake.in")
+endif()
+if(NOT EXISTS "${_PKG_CONFIG_IN}")
+  message(FATAL_ERROR "ProjectConfig.cmake.in not found; please add it to the source tree.")
+endif()
+
+configure_package_config_file(
+  "${_PKG_CONFIG_IN}"
+  "${CMAKE_CURRENT_BINARY_DIR}/f2cConfig.cmake"
+  INSTALL_DESTINATION "${PACKAGE_CONFIG_INSTALL_DIR}"
+)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/f2cConfigVersion.cmake"
+  VERSION "${PROJECT_VERSION}"
+  COMPATIBILITY SameMajorVersion
+)
+
+# ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 install(TARGETS f2c EXPORT f2cTargets RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -250,58 +241,32 @@ install(FILES "${GEN_DIR}/f2c.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Export stubs for future packaging
 
-install(EXPORT f2cTargets NAMESPACE f2c:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/f2c)
+install(EXPORT f2cTargets NAMESPACE f2c:: DESTINATION ${PACKAGE_CONFIG_INSTALL_DIR})
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/f2cConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/f2cConfigVersion.cmake"
+  DESTINATION ${PACKAGE_CONFIG_INSTALL_DIR})
 
 # ---------------------------------------------------------------------------
 # Uninstall target
 # ---------------------------------------------------------------------------
-set(_UNINSTALL_IN "${CMAKE_SOURCE_DIR}/cmake_uninstall.cmake.in")
-if(NOT EXISTS "${_UNINSTALL_IN}")
-  set(_UNINSTALL_IN "${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in")
-endif()
+set(_UNINSTALL_IN "${CMAKE_SOURCE_DIR}/cmake/Uninstall.cmake.in")
 if(EXISTS "${_UNINSTALL_IN}")
   configure_file("${_UNINSTALL_IN}" "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake" IMMEDIATE @ONLY)
   add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/cmake_uninstall.cmake"
     COMMENT "Uninstall previously installed files")
 else()
-  message(WARNING "cmake_uninstall.cmake.in not found; 'uninstall' target is disabled.")
+  message(WARNING "cmake/Uninstall.cmake.in not found; 'uninstall' target is disabled.")
 endif()
 
 # ---------------------------------------------------------------------------
 # Cleaning policy
 # - Default `clean` removes build artefacts only. It DOES NOT remove:
-#   * local tarballs in ${TARBALL_DIR}
-#   * downloaded tarballs in ${CMAKE_BINARY_DIR}/_dl (not declared as outputs)
-# Provide an explicit "distclean" target for full reset (keeps _dl by default).
-# ---------------------------------------------------------------------------
-add_custom_target(distclean
-  COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/vendor" "${CMAKE_BINARY_DIR}/generated"
-  COMMENT "Deep clean build products (keeps tarballs and downloaded cache)")
-
-# Optional: purge even the download cache (use with care)
-add_custom_target(purge
-  COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/vendor" "${CMAKE_BINARY_DIR}/generated" "${CMAKE_BINARY_DIR}/_dl"
-  COMMENT "Remove build products and download cache (tarballs in ${TARBALL_DIR} are preserved)")
-
-# ---------------------------------------------------------------------------
-# Help target
-# ---------------------------------------------------------------------------
-add_custom_target(help_targets
-  COMMAND ${CMAKE_COMMAND} -E echo ""
-  COMMAND ${CMAKE_COMMAND} -E echo "Targets:"
-  COMMAND ${CMAKE_COMMAND} -E echo "  help_targets- Show this help."
-  COMMAND ${CMAKE_COMMAND} -E echo "  clean       - Remove build artifacts (keeps tar/zip and _dl cache)."
-  COMMAND ${CMAKE_COMMAND} -E echo "  distclean   - Remove vendor/ and generated/ in build tree."
-  COMMAND ${CMAKE_COMMAND} -E echo "  purge       - Remove vendor/, generated/, and _dl/ cache."
-  COMMAND ${CMAKE_COMMAND} -E echo "  check_xsum  - Generate xsum.out for upstream consistency."
-  COMMAND ${CMAKE_COMMAND} -E echo "  install     - Install built artifacts."
-  COMMAND ${CMAKE_COMMAND} -E echo "  uninstall   - Uninstall previously installed files."
-  COMMAND ${CMAKE_COMMAND} -E echo ""
-  COMMAND ${CMAKE_COMMAND} -E echo "Options:"
-  COMMAND ${CMAKE_COMMAND} -E echo "  -DNET_FETCH=ON|OFF       (current: ${NET_FETCH})"
-  COMMAND ${CMAKE_COMMAND} -E echo "  -DTARBALL_DIR=/path      (current: ${TARBALL_DIR})"
-  VERBATIM)
+#   * source archives in ${ARCHIVE_DIR} (user-provided)
+#   * downloaded archives in ${DOWNLOAD_CACHE_DIR}
+# Optional: remove download cache (use with care)
+add_download_cleanup_target(clean_downloads)
 
 # --- Enable tests ---
 include(CTest)

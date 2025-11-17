@@ -1,218 +1,162 @@
+# f2c / libf2c – Build & Maintenance Guide
 
+[日本語版 README](README.ja.md) も提供しています。
 
-# f2c / libf2c – ビルド & 保守ガイド
+## 1. Overview
 
-このリポジトリは、レガシーな Fortran→C 変換ツール **f2c** と、その実行時ライブラリ **libf2c** を、現代的な CMake でビルド・インストール・テスト可能にするための構成を提供します。新機能の追加は行わず、**保守性・再現性・最小改修**を重視します。
+This repository modernizes the legacy Fortran-to-C converter **f2c** and its runtime **libf2c** with a reproducible CMake-based workflow. The goal is maintenance and portability—not new features.
 
-> 目的:
-> - 上流ソースは古い Makefile 前提のため、**最新コンパイラ/ツールチェーンで安定ビルド**できるようにする
-> - 取得方法は「**手元のアーカイブを優先**、なければ **オンライン取得**」(Mode B)
-> - 生成物は **ビルドツリーへ隔離**（ソースツリーは汚さない）
+- Prefer local archives when available, otherwise fetch upstream (`Mode B`).
+- Keep the source tree clean; all generated files stay under `build/`.
+- Target modern toolchains (Clang/GCC, Ninja/Make, etc.).
 
----
-
-## 1. ディレクトリ構成
+## 2. Directory Layout
 
 ```
 .
 ├─ CMakeLists.txt
-├─ cmake_helpers/            # build-time small helpers (CMake scripts)
-├─ third_party/
-│  └─ tarballs/              # src.tgz / libf2c.zip を置く（任意・オフライン配布向け）
-├─ tests/                    # smoke (E2E) tests
-│  ├─ CMakeLists.txt
-│  └─ cases/
-│     ├─ 01_hello/
-│     │  ├─ hello.f
-│     │  └─ expected.txt     # 正規表現（前後空白を許容等）
-│     ├─ 02_print_int/
-│     └─ 03_sum/
-└─ build/                    # ← 生成物（ユーザー生成。版管理対象外）
-   ├─ vendor/                # 上流ソース展開先（libf2c, f2c_src）
-   ├─ generated/             # 生成ヘッダ（arith.h, f2c.h など）
-   └─ tests/                 # 各ケースの作業領域（.c, 実行ファイル, ログ）
+├─ cmake/                    # Shared CMake modules (FetchAndUnpack, ProjectConfig …)
+├─ archives/                 # Optional local archives (src.tgz, libf2c.zip, …)
+├─ tests/                    # Smoke / E2E tests
+└─ build/                    # Generated artifacts (ignored by VCS)
+   ├─ unpacked_sources/      # Extracted upstream sources
+   ├─ generated/             # Generated headers (arith.h, f2c.h, …)
+   └─ tests/                 # Test work directories
 ```
 
-- **ソースツリー**は常にクリーン: 展開物や生成物は `build/` 配下にのみ出力します。
-- `third_party/tarballs/` は **オフライン配布**や **社内共有**向け（GitHub 公開時は上流アーカイブを含めない運用を想定）。
+Additional cache: `.cache/downloads/` stores auto-fetched archives and can be wiped safely.
 
----
-
-## 2. 前提ツール
+## 3. Prerequisites
 
 - CMake 3.20+
-- C コンパイラ（GCC / Clang など）
-- make / ninja 等のビルドツール
-- （オンライン取得時）curl 等
+- C compiler (GCC/Clang)
+- Build tool (Ninja/Make)
+- Optional: network tools (`curl`, etc.) when `NET_FETCH=ON`
 
-> **Note (English):** The project is tested on macOS and Linux toolchains. Windows support is not a target at the moment.
+Tested on macOS and Linux. Windows is not in scope.
 
----
-
-## 3. ビルド & インストール（標準手順）
+## 4. Build & Install
 
 ```bash
-# Configure (オフライン優先、テスト有効)
+# Configure (prefer offline archives, enable tests)
 cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
 
 # Build
 cmake --build build --parallel
 
-# Install（ユーザー領域例）
-cmake --install build --prefix "$HOME/.local"   # ~/.local/bin に f2c が入る
+# Install (user-local)
+cmake --install build --prefix "$HOME/.local"
 
 # Uninstall
 cmake --build build --target uninstall
 ```
 
-> **Permission:** `/usr/local` などシステム領域へ入れる場合は `sudo cmake --install build`。ユーザー領域（`~/.local`）を推奨。
+To install under system paths, run with `sudo` or set an appropriate prefix (user-local is recommended).
 
----
+## 5. Archive Workflow (Mode B)
 
-## 4. 取得モード（Mode B）とハッシュ固定
+1. Place upstream archives under `archives/`:
+   - `src.tgz` (f2c sources)
+   - `libf2c.zip` (runtime sources)
+2. Enable network fallback with `-DNET_FETCH=ON`; downloaded files are cached in `.cache/downloads/`.
 
-このプロジェクトは **Mode B**（手元アーカイブ優先→無ければオンライン取得）で動作します。
-
-- 手元にアーカイブがある場合（推奨）: `third_party/tarballs/` に次のファイル名で配置します。
-  - `src.tgz`（f2c 本体ソース）
-  - `libf2c.zip`（ランタイムソース）
-- オンライン取得を許可する場合: `-DNET_FETCH=ON` で構成します。
-
-### ハッシュ固定
-
-再現性のため、上流アーカイブの **SHA256** を CMake に固定します。
+### Pinning SHA256 hashes
 
 ```bash
-# Hash calculation
-shasum -a 256 third_party/tarballs/src.tgz     | awk '{print $1}'
-shasum -a 256 third_party/tarballs/libf2c.zip  | awk '{print $1}'
+shasum -a 256 archives/src.tgz    | awk '{print $1}'
+shasum -a 256 archives/libf2c.zip | awk '{print $1}'
 ```
-上記の値を `CMakeLists.txt` の以下の変数に反映してください。
+
+Update the values in `CMakeLists.txt`:
 
 ```cmake
-set(F2C_SRC_SHA256  "<PUT_SHA256_FOR_src.tgz>")
-set(LIBF2C_SHA256   "<PUT_SHA256_FOR_libf2c.zip>")
+set(F2C_SRC_SHA256  "<SHA_FOR_src.tgz>")
+set(LIBF2C_SHA256   "<SHA_FOR_libf2c.zip>")
 ```
 
-オンライン経由の検証は次の通りです（ダウンロード→ハッシュ検証→ビルド）。
+To verify online fetching:
 
 ```bash
-# 一時的に手元のアーカイブを退避し、オンライン取得で検証
-mkdir -p /tmp/f2c_tarballs_backup
-mv third_party/tarballs/src.tgz    /tmp/f2c_tarballs_backup/
-mv third_party/tarballs/libf2c.zip /tmp/f2c_tarballs_backup/
+mkdir -p /tmp/f2c_archives_backup
+mv archives/src.tgz    /tmp/f2c_archives_backup/
+mv archives/libf2c.zip /tmp/f2c_archives_backup/
 
 rm -rf build
 cmake -S . -B build -DNET_FETCH=ON
 cmake --build build
 ```
 
-> **Tip (English):** If the online hash does not match the fixed one, configuration will fail immediately to protect reproducibility.
+## 6. Targets & Cleanup
 
----
+Primary targets:
+- `f2c` – converter executable
+- `f2c_runtime` – static runtime library
+- `xsum` – optional upstream tool
 
-## 5. CMake ターゲットとクリーン段階
+Auxiliary targets:
+- `unpack` – extracts archives via `add_unpack_target`
+- `uninstall` – removes installed files
+- `clean_downloads` – removes `build/unpacked_sources`, `build/generated`, and `.cache/downloads`
 
-### 主ターゲット
-- `f2c` : Fortran→C 変換ツール本体（実行ファイル）
-- `f2c_runtime` : ランタイムライブラリ（静的）
-- `xsum` : 上流の補助ツール（利用環境に応じて）
-
-### 補助ターゲット
-- `help_targets` : プロジェクト固有ターゲットの一覧を表示
-- `uninstall` : 既存のインストールを削除（`cmake_uninstall.cmake.in` 利用）
-
-### クリーン段階
-- `clean` : 一般的なビルド生成物を削除
-- `distclean` : `build/vendor/` と `build/generated/` を含め広く削除
-- `purge` : 上記に加え、ダウンロードキャッシュ等も削除（**同梱の tar/zip は削除しない**）
+Examples:
 
 ```bash
-# Examples
-cmake --build build --target help_targets
 cmake --build build --target clean
-cmake --build build --target distclean
-cmake --build build --target purge
+cmake --build build --target clean_downloads
+cmake --build build --target uninstall
 ```
 
----
+## 7. Tests
 
-## 6. テスト（スモーク / E2E）
-
-このリポジトリには **最小限の E2E スモークテスト** が含まれます。各ケースは `.f` を変換→リンク→実行し、**標準出力が期待値と一致**することを検証します。
+E2E smoke tests live under `tests/cases/<id>_name/`. Each case converts `.f`, links, runs, and checks stdout via regex.
 
 ```bash
-# Run all smoke tests
-ctest --test-dir build -L smoke --output-on-failure -j$(sysctl -n hw.ncpu 2>/dev/null || nproc)
+# All smoke tests
+ctest --test-dir build -L smoke --output-on-failure -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 
-# Run a single test
+# Single test
 ctest --test-dir build -R '^01_hello$' --output-on-failure
 
-# Re-run only failed
+# Re-run failed
 ctest --test-dir build --rerun-failed --output-on-failure
 ```
 
-### 追加方法（ケースを増やす）
-1. `tests/cases/NN_name/` を作成
-2. Fortran 固定形式の `.f` と、期待出力の正規表現 `expected.txt` を配置
-3. `tests/CMakeLists.txt` に `add_f2c_case(NN_name file.f expected.txt)` を1行追加
+Add a case by creating `tests/cases/NN_name/{program.f,expected.txt}` and appending `add_f2c_case(...)` to `tests/CMakeLists.txt`.
 
-> **Design notes (English):** Tests run in dedicated working directories under `build/tests/…`, keeping the source tree clean. Locale is fixed via `LC_ALL=C;TZ=UTC`. Floating-point output is avoided in smoke tests.
+## 8. Troubleshooting (selected)
 
----
+- `I/O error on c_file`: check write permissions / directories.
+- `Warning on line N: missing final end statement`: ensure fixed-form Fortran with trailing newline.
+- `file INSTALL cannot copy ... Permission denied`: use `--prefix "$HOME/.local"` or `sudo`.
+- `INSTALL(EXPORT) given unknown export`: align `install(TARGETS … EXPORT …)` names.
 
-## 7. トラブルシューティング
+## 9. Maintenance
 
-- **`I/O error on c_file`**
-  - 意味: 生成される C ファイルへの書き込みに失敗
-  - 代表例: 権限不足／出力先の存在しないディレクトリ／標準入力経由なのに標準出力をファイルへリダイレクトしていない
-  - 対処: 作業ディレクトリの権限と存在を確認。テストでは標準出力をファイルに保存する実装にしてあります。
+- Scope: bug fixes and toolchain support updates only.
+- Upstream refresh flow:
+  1. Download new archives → place under `archives/`
+  2. Update SHA256 in `CMakeLists.txt`
+  3. Rebuild/test with `-DNET_FETCH=ON`
+  4. Tag/release with notes on hashes and upstream changes
+- Target names (e.g., `f2c`, `f2c_runtime`) remain stable for downstream consumers.
 
-- **`Warning on line N: missing final end statement`**
-  - 意味: ファイル末尾までに `END` 文が検出できなかった
-  - 代表例: 固定形式の桁位置ずれ、末尾の改行欠落、不可視文字の混入
-  - 対処: `PROGRAM ...` / `PRINT ...` / `END` の形で、**末尾改行あり**の固定形式ソースにする
-
-- **`file INSTALL cannot copy ... Permission denied`**
-  - 意味: `/usr/local` など書き込み不可の場所にインストールしようとした
-  - 対処: `--prefix "$HOME/.local"` を使うか、`sudo` で実行
-
-- **`INSTALL(EXPORT) given unknown export`**
-  - 意味: `install(EXPORT ...)` の export 名と `install(TARGETS ... EXPORT ...)` が不整合
-  - 対処: CMakeLists の export 名を揃える
-
----
-
-## 8. メンテナンス方針
-
-- 範囲: **バグ修正** と **新規環境（OS/コンパイラ/パッケージ管理）対応** のみ。新機能追加は行いません。
-- 上流更新フロー:
-  1) 新アーカイブを取得 → `third_party/tarballs/` に配置
-  2) SHA256 を計算して `CMakeLists.txt` のハッシュを更新
-  3) `-DNET_FETCH=ON` でオンライン検証 → ビルド・テスト通過
-  4) タグ付け / リリースノート更新（ハッシュ値と上流の変更点を記載）
-- 命名と公開 API:
-  - CMake ターゲット名（`f2c`, `f2c_runtime` 等）は**安定化**し、後方互換を維持
-  - 生成ヘッダやツールは `build/generated/` に集約
-
-> **License note:** 上流ソースのライセンス条件を尊重してください。GitHub 公開時は上流アーカイブを含めず、この README の「取得モード」節に従ってビルドしてください。
-
----
-
-## 9. クイックリファレンス（よく使うコマンド）
+## 10. Quick Reference
 
 ```bash
-# Configure → Build → Install (user-local)
+# Configure → Build → Install
 cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
 cmake --build build --parallel
 cmake --install build --prefix "$HOME/.local"
 
-# Help / Uninstall / Clean
-cmake --build build --target help_targets
+# Cleanup / Uninstall
+cmake --build build --target clean
+cmake --build build --target clean_downloads
 cmake --build build --target uninstall
-cmake --build build --target distclean
 
 # Tests
-ctest --test-dir build -L smoke --output-on-failure -j$(sysctl -n hw.ncpu 2>/dev/null || nproc)
+ctest --test-dir build -L smoke --output-on-failure -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 ```
 
+---
+
+See [README.ja.md](README.ja.md) for the Japanese version.
