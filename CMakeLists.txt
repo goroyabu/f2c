@@ -69,6 +69,12 @@ add_executable(arithchk "${LIBF2C_DIR}/arithchk.c")
 add_dependencies(arithchk unpack)
 target_include_directories(arithchk PRIVATE "${LIBF2C_DIR}")
 target_compile_options(arithchk PRIVATE -DNO_FPINIT -DNO_LONG_LONG)
+if(NOT APPLE)
+  find_library(MATH_LIB m)
+  if(MATH_LIB)
+    target_link_libraries(arithchk PRIVATE ${MATH_LIB})
+  endif()
+endif()
 
 add_custom_command(
   OUTPUT "${GEN_DIR}/arith.h"
