@@ -19,7 +19,7 @@ This repository modernizes the legacy Fortran-to-C converter **f2c** and its run
 ├─ archives/                 # Optional local archives (src.tgz, libf2c.zip, …)
 ├─ tests/                    # Smoke / E2E tests
 └─ build/                    # Generated artifacts (ignored by VCS)
-   ├─ unpacked_sources/      # Extracted upstream sources
+   ├─ vendor/                # Extracted upstream sources
    ├─ generated/             # Generated headers (arith.h, f2c.h, …)
    └─ tests/                 # Test work directories
 ```
@@ -38,8 +38,8 @@ Tested on macOS and Linux. Windows is not in scope.
 ## 4. Build & Install
 
 ```bash
-# Configure (prefer offline archives, enable tests)
-cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
+# Configure (default: NET_FETCH=ON, enable tests)
+cmake -S . -B build -DBUILD_TESTING=ON
 
 # Build
 cmake --build build --parallel
@@ -58,7 +58,8 @@ To install under system paths, run with `sudo` or set an appropriate prefix (use
 1. Place upstream archives under `archives/`:
    - `src.tgz` (f2c sources)
    - `libf2c.zip` (runtime sources)
-2. Enable network fallback with `-DNET_FETCH=ON`; downloaded files are cached in `.cache/downloads/`.
+2. Network fetching is enabled by default (`NET_FETCH=ON`); downloaded files are cached in `.cache/downloads/`.
+   Use `-DNET_FETCH=OFF` for strictly offline/reproducible local-archive workflows.
 
 ### Pinning SHA256 hashes
 
@@ -96,7 +97,7 @@ Primary targets:
 Auxiliary targets:
 - `unpack` – extracts archives via `add_unpack_target`
 - `uninstall` – removes installed files
-- `clean_downloads` – removes `build/unpacked_sources`, `build/generated`, and `.cache/downloads`
+- `clean_downloads` – removes `build/vendor`, `build/generated`, and `.cache/downloads`
 
 Examples:
 
@@ -121,7 +122,7 @@ ctest --test-dir build -R '^01_hello$' --output-on-failure
 ctest --test-dir build --rerun-failed --output-on-failure
 ```
 
-Add a case by creating `tests/cases/NN_name/{program.f,expected.txt}` and appending `add_f2c_case(...)` to `tests/CMakeLists.txt`.
+Add a case by creating `tests/cases/NN_name/` with one fixed-form Fortran source and `expected.txt`, then append `add_f2c_case(...)` to `tests/CMakeLists.txt`. The source filename is arbitrary; `prog.f` is the recommended convention unless a more descriptive name is clearer.
 
 ## 8. Troubleshooting (selected)
 
@@ -144,7 +145,7 @@ Add a case by creating `tests/cases/NN_name/{program.f,expected.txt}` and append
 
 ```bash
 # Configure → Build → Install
-cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
+cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --parallel
 cmake --install build --prefix "$HOME/.local"
 

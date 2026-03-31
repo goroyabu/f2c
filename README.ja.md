@@ -25,7 +25,7 @@
 │     ├─ 02_print_int/
 │     └─ 03_sum/
 └─ build/                    # ← 生成物（ユーザー生成。版管理対象外）
-   ├─ unpacked_sources/      # 上流ソース展開先（libf2c, f2c_src）
+   ├─ vendor/                # 上流ソース展開先（libf2c, f2c_src）
    ├─ generated/             # 生成ヘッダ（arith.h, f2c.h など）
    └─ tests/                 # 各ケースの作業領域（.c, 実行ファイル, ログ）
 ```
@@ -50,8 +50,8 @@
 ## 3. ビルド & インストール（標準手順）
 
 ```bash
-# Configure (オフライン優先、テスト有効)
-cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
+# Configure (既定: NET_FETCH=ON、テスト有効)
+cmake -S . -B build -DBUILD_TESTING=ON
 
 # Build
 cmake --build build --parallel
@@ -74,7 +74,8 @@ cmake --build build --target uninstall
 - 手元にアーカイブがある場合（推奨）: `archives/` に次のファイル名で配置します。
   - `src.tgz`（f2c 本体ソース）
   - `libf2c.zip`（ランタイムソース）
-- オンライン取得を許可する場合: `-DNET_FETCH=ON` で構成します（自動取得分は `.cache/downloads/` に保存されます）。
+- オンライン取得は既定で有効です（`NET_FETCH=ON`、自動取得分は `.cache/downloads/` に保存）。
+- 厳密にオフライン運用したい場合は `-DNET_FETCH=OFF` を指定します。
 
 ### ハッシュ固定
 
@@ -119,7 +120,7 @@ cmake --build build
 ### 補助ターゲット
 - `unpack` : アーカイブ展開（`resolve_input_file`/`add_unpack_target` が登録）
 - `uninstall` : 既存のインストールを削除（`cmake/Uninstall.cmake.in` 利用）
-- `clean_downloads` : `build/unpacked_sources`, `build/generated`, `.cache/downloads` をまとめて削除
+- `clean_downloads` : `build/vendor`, `build/generated`, `.cache/downloads` をまとめて削除
 
 ```bash
 # Examples
@@ -147,8 +148,10 @@ ctest --test-dir build --rerun-failed --output-on-failure
 
 ### 追加方法（ケースを増やす）
 1. `tests/cases/NN_name/` を作成
-2. Fortran 固定形式の `.f` と、期待出力の正規表現 `expected.txt` を配置
+2. Fortran 固定形式のソース 1 個と、期待出力の正規表現 `expected.txt` を配置
 3. `tests/CMakeLists.txt` に `add_f2c_case(NN_name file.f expected.txt)` を1行追加
+
+Fortran ソース名は任意です。慣例として `prog.f` を推奨しますが、ケース内容が分かりやすい名前でも構いません。
 
 > **Design notes (English):** Tests run in dedicated working directories under `build/tests/…`, keeping the source tree clean. Locale is fixed via `LC_ALL=C;TZ=UTC`. Floating-point output is avoided in smoke tests.
 
@@ -196,7 +199,7 @@ ctest --test-dir build --rerun-failed --output-on-failure
 
 ```bash
 # Configure → Build → Install (user-local)
-cmake -S . -B build -DNET_FETCH=OFF -DBUILD_TESTING=ON
+cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --parallel
 cmake --install build --prefix "$HOME/.local"
 
