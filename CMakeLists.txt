@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(f2c VERSION 0.2.0 LANGUAGES C)
+project(f2c VERSION 0.2.1 LANGUAGES C)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -191,7 +191,13 @@ set(LIBF2C_SOURCES
 set_source_files_properties(${LIBF2C_SOURCES} PROPERTIES GENERATED TRUE)
 add_library(f2c_runtime STATIC ${LIBF2C_SOURCES})
 add_dependencies(f2c_runtime unpack)
-target_include_directories(f2c_runtime PRIVATE "${LIBF2C_DIR}" "${GEN_DIR}")
+target_include_directories(f2c_runtime
+  PRIVATE
+    "${LIBF2C_DIR}"
+    "${GEN_DIR}"
+  PUBLIC
+    $<BUILD_INTERFACE:${GEN_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_definitions(f2c_runtime PRIVATE Skip_f2c_Undefs)
 set_target_properties(f2c_runtime PROPERTIES OUTPUT_NAME "f2c")
 
