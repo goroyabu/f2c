@@ -27,12 +27,12 @@ add_unpack_archive("${F2C_SRC_ROOT}.stamp" "${F2C_SRC_ROOT}" "${F2C_SRC_TGZ}"
   COMMAND ${CMAKE_COMMAND} -E tar xzf)
 
 # libf2c runtime archive (libf2c.zip)
-set(LIBF2C_ROOT     "${VENDOR_ROOT}/libf2c")
+set(LIBF2C_ROOT     "${VENDOR_ROOT}")
 set(LIBF2C_URL      "https://www.netlib.org/f2c/libf2c.zip")
 set(LIBF2C_SHA256   "cc84253b47b5c036aa1d529332a6c218a39ff71c76974296262b03776f822695")
 set(LIBF2C_LOCAL    "${ARCHIVE_DIR}/libf2c.zip")
 resolve_input_file(LIBF2C_ZIP   "${LIBF2C_URL}"   "${LIBF2C_SHA256}"   "${LIBF2C_LOCAL}")
-add_unpack_archive("${LIBF2C_ROOT}.stamp" "${LIBF2C_ROOT}" "${LIBF2C_ZIP}"
+add_unpack_archive("${VENDOR_ROOT}/libf2c.stamp" "${LIBF2C_ROOT}" "${LIBF2C_ZIP}"
   COMMENT "Unpacking libf2c.zip"
   COMMAND ${CMAKE_COMMAND} -E tar xvf)
 
@@ -40,7 +40,7 @@ add_unpack_target(unpack)
 
 # Now point to the extracted sources
 set(F2C_SRC_DIR "${F2C_SRC_ROOT}/src")
-set(LIBF2C_DIR  "${LIBF2C_ROOT}")
+set(LIBF2C_DIR  "${VENDOR_ROOT}")
 
 # Generated files directory
 set(GEN_DIR "${CMAKE_BINARY_DIR}/generated")
@@ -53,7 +53,7 @@ file(MAKE_DIRECTORY "${GEN_DIR}")
 add_custom_command(
   OUTPUT "${GEN_DIR}/tokdefs.h"
   COMMAND /bin/sh -c "awk 'NF{printf \"#define %s %d\\n\", $0, NR}' \"${F2C_SRC_DIR}/tokens\" > \"${GEN_DIR}/tokdefs.h\""
-  DEPENDS "${F2C_SRC_ROOT}.stamp" "${F2C_SRC_DIR}/tokens"
+  DEPENDS "${F2C_SRC_ROOT}.stamp"
   COMMENT "Generating tokdefs.h"
   VERBATIM)
 
@@ -79,28 +79,28 @@ endif()
 add_custom_command(
   OUTPUT "${GEN_DIR}/arith.h"
   COMMAND /bin/sh -c "\"$<TARGET_FILE:arithchk>\" > \"${GEN_DIR}/arith.h\""
-  DEPENDS arithchk "${LIBF2C_ROOT}.stamp"
+  DEPENDS arithchk "${VENDOR_ROOT}/libf2c.stamp"
   COMMENT "Generating arith.h using arithchk"
   VERBATIM)
 
 add_custom_command(
   OUTPUT "${GEN_DIR}/f2c.h"
   COMMAND /bin/sh -c "cat \"${LIBF2C_DIR}/f2c.h0\" \"${LIBF2C_DIR}/f2ch.add\" > \"${GEN_DIR}/f2c.h\""
-  DEPENDS "${LIBF2C_ROOT}.stamp" "${LIBF2C_DIR}/f2c.h0" "${LIBF2C_DIR}/f2ch.add"
+  DEPENDS "${VENDOR_ROOT}/libf2c.stamp"
   COMMENT "Generating f2c.h"
   VERBATIM)
 
 add_custom_command(
   OUTPUT "${GEN_DIR}/signal1.h"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBF2C_DIR}/signal1.h0" "${GEN_DIR}/signal1.h"
-  DEPENDS "${LIBF2C_ROOT}.stamp" "${LIBF2C_DIR}/signal1.h0"
+  DEPENDS "${VENDOR_ROOT}/libf2c.stamp"
   COMMENT "Generating signal1.h from signal1.h0"
   VERBATIM)
 
 add_custom_command(
   OUTPUT "${GEN_DIR}/sysdep1.h"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBF2C_DIR}/sysdep1.h0" "${GEN_DIR}/sysdep1.h"
-  DEPENDS "${LIBF2C_ROOT}.stamp" "${LIBF2C_DIR}/sysdep1.h0"
+  DEPENDS "${VENDOR_ROOT}/libf2c.stamp"
   COMMENT "Generating sysdep1.h from sysdep1.h0"
   VERBATIM)
 
