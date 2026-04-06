@@ -10,21 +10,91 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and test (${{ matrix.os }})
+    name: Build and test (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
+        include:
+          - name: ubuntu-24.04 gcc
+            os: ubuntu-24.04
+            cc: gcc
+            cxx: g++
+            enable_sanitizers: OFF
+          - name: ubuntu-24.04 clang+sanitizers
+            os: ubuntu-24.04
+            cc: clang
+            cxx: clang++
+            enable_sanitizers: ON
+          - name: ubuntu-22.04 gcc
+            os: ubuntu-22.04
+            cc: gcc
+            cxx: g++
+            enable_sanitizers: OFF
+          - name: macos-15 apple-clang
+            os: macos-15
+            cc: clang
+            cxx: clang++
+            enable_sanitizers: OFF
+          - name: macos-14 apple-clang
+            os: macos-14
+            cc: clang
+            cxx: clang++
+            enable_sanitizers: OFF
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -S . -B build -DNET_FETCH=ON -DBUILD_TESTING=ON
+        run: >
+          cmake -S . -B build
+          -DNET_FETCH=ON
+          -DBUILD_TESTING=ON
+          -DENABLE_SANITIZERS=${{ matrix.enable_sanitizers }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Install
+        run: cmake --install build --prefix "${{ github.workspace }}/stage"
+
+      - name: Verify installed package with find_package
+        run: |
+          cmake -S tests/package_smoke -B build/package_smoke \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
+          cmake --build build/package_smoke --parallel
+
+  offline-build-and-test:
+    name: Offline build and test (ubuntu-24.04 gcc)
+    runs-on: ubuntu-24.04
+
+    env:
+      CC: gcc
+      CXX: g++
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare offline archives
+        run: |
+          mkdir -p archives
+          curl -L https://www.netlib.org/f2c/src.tgz -o archives/src.tgz
+          curl -L https://www.netlib.org/f2c/libf2c.zip -o archives/libf2c.zip
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DNET_FETCH=OFF
+          -DBUILD_TESTING=ON
 
       - name: Build
         run: cmake --build build --parallel
