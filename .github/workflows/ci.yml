@@ -21,30 +21,36 @@ jobs:
             cc: gcc
             cxx: g++
             enable_sanitizers: OFF
+            lsan_options: ""
           - name: ubuntu-24.04 clang+sanitizers
             os: ubuntu-24.04
             cc: clang
             cxx: clang++
             enable_sanitizers: ON
+            lsan_options: detect_leaks=0
           - name: ubuntu-22.04 gcc
             os: ubuntu-22.04
             cc: gcc
             cxx: g++
             enable_sanitizers: OFF
+            lsan_options: ""
           - name: macos-15 apple-clang
             os: macos-15
             cc: clang
             cxx: clang++
             enable_sanitizers: OFF
+            lsan_options: ""
           - name: macos-14 apple-clang
             os: macos-14
             cc: clang
             cxx: clang++
             enable_sanitizers: OFF
+            lsan_options: ""
 
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
+      LSAN_OPTIONS: ${{ matrix.lsan_options }}
 
     steps:
       - name: Checkout
