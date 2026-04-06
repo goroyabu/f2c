@@ -18,12 +18,13 @@
 ├─ archives/                 # 手元アーカイブ (src.tgz / libf2c.zip 等)
 ├─ tests/                    # smoke (E2E) tests
 │  ├─ CMakeLists.txt
-│  └─ cases/
-│     ├─ 01_hello/
-│     │  ├─ hello.f
-│     │  └─ expected.txt     # 正規表現（前後空白を許容等）
-│     ├─ 02_print_int/
-│     └─ 03_sum/
+│  ├─ cases/                 # 変換・実行系の smoke tests
+│  │  ├─ 01_hello/
+│  │  │  ├─ hello.f
+│  │  │  └─ expected.txt     # 正規表現（前後空白を許容等）
+│  │  ├─ 02_print_int/
+│  │  └─ 03_sum/
+│  └─ package_smoke/         # install/export の下流利用検証
 └─ build/                    # ← 生成物（ユーザー生成。版管理対象外）
    ├─ vendor/                # 上流ソース展開先（libf2c, f2c_src）
    ├─ generated/             # 生成ヘッダ（arith.h, f2c.h など）
@@ -134,6 +135,7 @@ cmake --build build --target uninstall
 ## 6. テスト（スモーク / E2E）
 
 このリポジトリには **最小限の E2E スモークテスト** が含まれます。各ケースは `.f` を変換→リンク→実行し、**標準出力が期待値と一致**することを検証します。
+`tests/package_smoke/` には、インストール済みヘッダ、export されたターゲット、`find_package(f2c)` の挙動を確認するための最小の下流 CMake サンプルを置いています。
 
 ```bash
 # Run all smoke tests
@@ -182,11 +184,12 @@ Fortran ソース名は任意です。慣例として `prog.f` を推奨しま�
 ## 8. メンテナンス方針
 
 - 範囲: **バグ修正** と **新規環境（OS/コンパイラ/パッケージ管理）対応** のみ。新機能追加は行いません。
+- `main` への取り込みは基本的に pull request 経由とし、リリースノートは `.github/release.yml` に基づく GitHub 標準の自動生成を使います。
 - 上流更新フロー:
   1) 新アーカイブを取得 → `archives/` に配置
   2) SHA256 を計算して `CMakeLists.txt` のハッシュを更新
   3) `-DNET_FETCH=ON` でオンライン検証 → ビルド・テスト通過
-  4) タグ付け / リリースノート更新（ハッシュ値と上流の変更点を記載）
+  4) タグ付け / 自動生成リリースノート作成（必要に応じて補足を追記）
 - 命名と公開 API:
   - CMake ターゲット名（`f2c`, `f2c_runtime` 等）は**安定化**し、後方互換を維持
   - 生成ヘッダやツールは `build/generated/` に集約

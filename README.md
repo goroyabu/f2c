@@ -18,6 +18,8 @@ This repository modernizes the legacy Fortran-to-C converter **f2c** and its run
 ├─ cmake/                    # Shared CMake modules (FetchAndUnpack, ProjectConfig …)
 ├─ archives/                 # Optional local archives (src.tgz, libf2c.zip, …)
 ├─ tests/                    # Smoke / E2E tests
+│  ├─ cases/                 # Translator/runtime smoke tests
+│  └─ package_smoke/         # Downstream install/export verification
 └─ build/                    # Generated artifacts (ignored by VCS)
    ├─ vendor/                # Extracted upstream sources
    ├─ generated/             # Generated headers (arith.h, f2c.h, …)
@@ -110,6 +112,7 @@ cmake --build build --target uninstall
 ## 7. Tests
 
 E2E smoke tests live under `tests/cases/<id>_name/`. Each case converts `.f`, links, runs, and checks stdout via regex.
+`tests/package_smoke/` contains a minimal downstream CMake consumer used to verify installed headers, exported targets, and `find_package(f2c)` behavior.
 
 ```bash
 # All smoke tests
@@ -134,11 +137,12 @@ Add a case by creating `tests/cases/NN_name/` with one fixed-form Fortran source
 ## 9. Maintenance
 
 - Scope: bug fixes and toolchain support updates only.
+- Pull requests are the default integration path for `main`; releases use GitHub-generated notes configured by `.github/release.yml`.
 - Upstream refresh flow:
   1. Download new archives → place under `archives/`
   2. Update SHA256 in `CMakeLists.txt`
   3. Rebuild/test with `-DNET_FETCH=ON`
-  4. Tag/release with notes on hashes and upstream changes
+  4. Tag/release with generated notes plus any necessary release-specific context
 - Target names (e.g., `f2c`, `f2c_runtime`) remain stable for downstream consumers.
 
 ## 10. Quick Reference
