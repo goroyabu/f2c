@@ -1,7 +1,5 @@
 # f2c CMake Build
 
-[日本語版 README](README.ja.md)
-
 This repository provides a CMake-based build, test, install, and package
 workflow for the upstream **f2c** Fortran-to-C converter and its **libf2c**
 runtime library.

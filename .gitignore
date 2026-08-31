@@ -165,7 +165,7 @@ Temporary Items
 Testing/
 CTestTestfile.cmake
 
-# macOS extras (保険)
+# macOS extras (defensive)
 .DS_Store
 # Do not publish upstream snapshots
 third_party/f2c/**
