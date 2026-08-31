@@ -1,167 +1,192 @@
-# f2c / libf2c – Build & Maintenance Guide
+# f2c CMake Build
 
-[日本語版 README](README.ja.md) も提供しています。
+This repository provides a CMake-based build, test, install, and package
+workflow for the upstream **f2c** Fortran-to-C converter and its **libf2c**
+runtime library.
 
-## 1. Overview
+It does not replace or extend the upstream Fortran translator. The project
+focuses on maintainability, portability, reproducible source acquisition, and
+downstream CMake integration.
 
-This repository modernizes the legacy Fortran-to-C converter **f2c** and its runtime **libf2c** with a reproducible CMake-based workflow. The goal is maintenance and portability—not new features.
+## What This Repository Provides
 
-- Prefer local archives when available, otherwise fetch upstream (`Mode B`).
-- Keep the source tree clean; all generated files stay under `build/`.
-- Target modern toolchains (Clang/GCC, Ninja/Make, etc.).
+- The `f2c` command-line converter
+- The static `libf2c` runtime library
+- The public `f2c.h` header
+- An installed CMake package with the `f2c::f2c_runtime` target
+- End-to-end converter/runtime smoke tests
+- Linux and macOS CI with GCC, Clang, AppleClang, and sanitizer coverage
+- Online source acquisition by default, with an optional offline workflow
 
-## 2. Directory Layout
+Upstream source archives are downloaded from
+[Netlib](https://www.netlib.org/f2c/) during configuration unless archives with
+the expected filenames are available locally.
 
-```
-.
-├─ CMakeLists.txt
-├─ cmake/                    # Shared CMake modules (FetchAndUnpack, ProjectConfig …)
-├─ archives/                 # Optional local archives (src.tgz, libf2c.zip, …)
-├─ tests/                    # Smoke / E2E tests
-│  ├─ cases/                 # Translator/runtime smoke tests
-│  └─ package_smoke/         # Downstream install/export verification
-└─ build/                    # Generated artifacts (ignored by VCS)
-   ├─ vendor/                # Extracted upstream sources
-   ├─ generated/             # Generated headers (arith.h, f2c.h, …)
-   └─ tests/                 # Test work directories
-```
+## Quick Start
 
-Additional cache: `.cache/downloads/` stores auto-fetched archives and can be wiped safely.
+### Prerequisites
 
-## 3. Prerequisites
+- CMake 3.20 or later
+- A C compiler such as GCC, Clang, or AppleClang
+- A build tool such as Ninja or Make
+- Network access during the first configuration, unless local archives are
+  provided
 
-- CMake 3.20+
-- C compiler (GCC/Clang)
-- Build tool (Ninja/Make)
-- Optional: network tools (`curl`, etc.) when `NET_FETCH=ON`
-
-Tested on macOS and Linux. Windows is not in scope.
-
-## 4. Build & Install
+Run the following commands from the repository root:
 
 ```bash
-# Configure (default: NET_FETCH=ON, enable tests)
 cmake -S . -B build -DBUILD_TESTING=ON
-
-# Build
 cmake --build build --parallel
-
-# Install (user-local)
-cmake --install build --prefix "$HOME/.local"
-
-# Uninstall
-cmake --build build --target uninstall
+ctest --test-dir build --output-on-failure
 ```
 
-To install under system paths, run with `sudo` or set an appropriate prefix (user-local is recommended).
+Network fetching is enabled by default with `NET_FETCH=ON`. Downloaded
+archives are cached under `.cache/downloads/`.
 
-## 5. Archive Workflow (Mode B)
+### Install
 
-1. Place upstream archives under `archives/`:
-   - `src.tgz` (f2c sources)
-   - `libf2c.zip` (runtime sources)
-2. Network fetching is enabled by default (`NET_FETCH=ON`); downloaded files are cached in `.cache/downloads/`.
-   Use `-DNET_FETCH=OFF` for strictly offline/reproducible local-archive workflows.
-
-### Pinning SHA256 hashes
+Install to a user-local prefix:
 
 ```bash
-shasum -a 256 archives/src.tgz    | awk '{print $1}'
-shasum -a 256 archives/libf2c.zip | awk '{print $1}'
+cmake --install build --prefix "$HOME/.local"
 ```
 
-Update the values in `CMakeLists.txt`:
+This installs the following primary artifacts on conventional Unix systems:
+
+```text
+$HOME/.local/bin/f2c
+$HOME/.local/include/f2c.h
+$HOME/.local/lib/libf2c.a
+$HOME/.local/lib/cmake/f2c/
+```
+
+If `$HOME/.local/bin` is not already on `PATH`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Confirm that the installed converter is available:
+
+```bash
+command -v f2c
+```
+
+### Translate and Run a Small Program
+
+Create a fixed-form Fortran source file named `hello.f`:
+
+```fortran
+      PROGRAM HELLO
+      PRINT *, 'HELLO'
+      END
+```
+
+Translate it to C:
+
+```bash
+f2c hello.f
+```
+
+The command writes `hello.c` in the current directory. Compile the generated C
+source and link it with `libf2c` and the platform math library:
+
+```bash
+cc hello.c \
+  -I"$HOME/.local/include" \
+  -L"$HOME/.local/lib" \
+  -lf2c -lm \
+  -o hello
+./hello
+```
+
+Expected output:
+
+```text
+ HELLO
+```
+
+For the complete f2c command-line reference, see the
+[upstream f2c manual](https://www.netlib.org/f2c/f2c.1).
+
+## Using the Installed CMake Package
+
+Downstream CMake projects can consume the installed runtime through its
+exported target:
 
 ```cmake
-set(F2C_SRC_SHA256  "<SHA_FOR_src.tgz>")
-set(LIBF2C_SHA256   "<SHA_FOR_libf2c.zip>")
+cmake_minimum_required(VERSION 3.15)
+project(example LANGUAGES C)
+
+find_package(f2c CONFIG REQUIRED)
+
+add_executable(example generated.c)
+target_link_libraries(example PRIVATE f2c::f2c_runtime)
 ```
 
-To verify online fetching:
+In this example, `generated.c` is a C source file that has already been
+translated by f2c. The installed CMake package does not currently automate the
+Fortran-to-C translation step.
+
+When f2c is installed under a non-system prefix, pass that prefix while
+configuring the consumer:
 
 ```bash
-mkdir -p /tmp/f2c_archives_backup
-mv archives/src.tgz    /tmp/f2c_archives_backup/
-mv archives/libf2c.zip /tmp/f2c_archives_backup/
-
-rm -rf build
-cmake -S . -B build -DNET_FETCH=ON
-cmake --build build
-```
-
-## 6. Targets & Cleanup
-
-Primary targets:
-- `f2c` – converter executable
-- `f2c_runtime` – static runtime library
-- `xsum` – optional upstream tool
-
-Auxiliary targets:
-- `unpack` – extracts archives via `add_unpack_target`
-- `uninstall` – removes installed files
-- `clean_downloads` – removes `build/vendor`, `build/generated`, and `.cache/downloads`
-
-Examples:
-
-```bash
-cmake --build build --target clean
-cmake --build build --target clean_downloads
-cmake --build build --target uninstall
-```
-
-## 7. Tests
-
-E2E smoke tests live under `tests/cases/<id>_name/`. Each case converts `.f`, links, runs, and checks stdout via regex.
-`tests/package_smoke/` contains a minimal downstream CMake consumer used to verify installed headers, exported targets, and `find_package(f2c)` behavior.
-
-```bash
-# All smoke tests
-ctest --test-dir build -L smoke --output-on-failure -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-
-# Single test
-ctest --test-dir build -R '^01_hello$' --output-on-failure
-
-# Re-run failed
-ctest --test-dir build --rerun-failed --output-on-failure
-```
-
-Add a case by creating `tests/cases/NN_name/` with one fixed-form Fortran source and `expected.txt`, then append `add_f2c_case(...)` to `tests/CMakeLists.txt`. The source filename is arbitrary; `prog.f` is the recommended convention unless a more descriptive name is clearer.
-
-## 8. Troubleshooting (selected)
-
-- `I/O error on c_file`: check write permissions / directories.
-- `Warning on line N: missing final end statement`: ensure fixed-form Fortran with trailing newline.
-- `file INSTALL cannot copy ... Permission denied`: use `--prefix "$HOME/.local"` or `sudo`.
-- `INSTALL(EXPORT) given unknown export`: align `install(TARGETS … EXPORT …)` names.
-
-## 9. Maintenance
-
-- Scope: bug fixes and toolchain support updates only.
-- Pull requests are the default integration path for `main`; releases use GitHub-generated notes configured by `.github/release.yml`.
-- Upstream refresh flow:
-  1. Download new archives → place under `archives/`
-  2. Update SHA256 in `CMakeLists.txt`
-  3. Rebuild/test with `-DNET_FETCH=ON`
-  4. Tag/release with generated notes plus any necessary release-specific context
-- Target names (e.g., `f2c`, `f2c_runtime`) remain stable for downstream consumers.
-
-## 10. Quick Reference
-
-```bash
-# Configure → Build → Install
-cmake -S . -B build -DBUILD_TESTING=ON
+cmake -S . -B build \
+  -DCMAKE_PREFIX_PATH="$HOME/.local"
 cmake --build build --parallel
-cmake --install build --prefix "$HOME/.local"
-
-# Cleanup / Uninstall
-cmake --build build --target clean
-cmake --build build --target clean_downloads
-cmake --build build --target uninstall
-
-# Tests
-ctest --test-dir build -L smoke --output-on-failure -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
 ```
 
----
+The imported target supplies the installed `f2c.h` include directory and the
+runtime library location. The current package provides a static runtime
+library.
 
-See [README.ja.md](README.ja.md) for the Japanese version.
+## Offline Build
+
+Offline building is supported as a secondary workflow. Place these files under
+`archives/`:
+
+```text
+archives/src.tgz
+archives/libf2c.zip
+```
+
+Then explicitly disable network fetching:
+
+```bash
+cmake -S . -B build \
+  -DNET_FETCH=OFF \
+  -DBUILD_TESTING=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+The archives are not stored in this Git repository.
+
+## Supported Environments
+
+The continuous-integration matrix currently covers:
+
+- Ubuntu 24.04 with GCC
+- Ubuntu 24.04 with Clang and AddressSanitizer/UndefinedBehaviorSanitizer
+- Ubuntu 22.04 with GCC
+- macOS 15 with AppleClang
+- macOS 14 with AppleClang
+
+Ninja and Make-style CMake generators are intended to work. CI is the source of
+truth for the specific operating-system and compiler combinations verified by
+the project.
+
+## Known Limitations
+
+- Windows is currently out of scope.
+- The installed runtime is currently a static library; a shared library is not
+  provided.
+- The primary use case is legacy Fortran 77 input. This project is not a
+  replacement for a modern Fortran compiler and does not add newer Fortran
+  language features to upstream f2c.
+- Cross-compilation is not currently verified because the build runs the
+  generated `arithchk` host tool while creating platform-specific headers.
+- Existing local or cached upstream archives are not yet revalidated against
+  the pinned SHA256 values. A newly downloaded archive is validated during the
+  download operation.
