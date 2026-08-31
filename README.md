@@ -19,8 +19,8 @@ downstream CMake integration.
 - Online source acquisition by default, with an optional offline workflow
 
 Upstream source archives are downloaded from
-[Netlib](https://www.netlib.org/f2c/) during configuration unless matching
-local archives are available.
+[Netlib](https://www.netlib.org/f2c/) during configuration unless archives with
+the expected filenames are available locally.
 
 ## Quick Start
 
