@@ -159,7 +159,7 @@ Temporary Items
 /generated/
 /xsum*.out
 
-# Environment-specific agent guidance and local documentation notes
+# Current machine-local agent guidance and local documentation notes
 /AGENTS.md
 /docs/*.local.md
 
