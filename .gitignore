@@ -150,13 +150,18 @@ Temporary Items
 *.org
 
 # --- Project specific ---
+/archives/
 /build/
 /build-*/
 /out/
+/stage/
 /.cache/
 /generated/
 /xsum*.out
+
+# Environment-specific agent guidance and local documentation notes
 /AGENTS.md
+/docs/*.local.md
 
 # Ninja/CTest extras
 *.ninja
