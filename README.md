@@ -190,3 +190,10 @@ the project.
 - Existing local or cached upstream archives are not yet revalidated against
   the pinned SHA256 values. A newly downloaded archive is validated during the
   download operation.
+
+## License
+
+Repository-maintained files are available under the [MIT License](LICENSE).
+Downloaded upstream f2c and libf2c sources, and artifacts derived from them,
+remain subject to the [upstream notice](THIRD_PARTY_NOTICES.md). The repository
+MIT License does not relicense those upstream sources or derived artifacts.
