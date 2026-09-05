@@ -43,6 +43,30 @@ ctest --test-dir build --output-on-failure
 Network fetching is enabled by default with `NET_FETCH=ON`. Downloaded
 archives are cached under `.cache/downloads/`.
 
+Every selected upstream archive is checked against its pinned SHA256 value,
+whether it is supplied under `archives/`, reused from the download cache, or
+downloaded during configuration. A mismatch stops configuration by default.
+
+For deliberate local experiments with changed upstream contents, the mismatch
+can be acknowledged explicitly:
+
+```bash
+cmake -S . -B build \
+  -DF2C_ALLOW_UNVERIFIED_ARCHIVES=ON
+```
+
+This option still calculates and reports the expected and actual hashes, but
+continues after the mismatch. It is unsafe for normal builds, CI, or releases.
+The setting is stored in the build directory's CMake cache; return to strict
+verification explicitly when the experiment is complete:
+
+```bash
+cmake -S . -B build \
+  -DF2C_ALLOW_UNVERIFIED_ARCHIVES=OFF
+```
+
+The option does not allow missing files or download failures to be ignored.
+
 ### Install
 
 Install to a user-local prefix:
@@ -187,9 +211,6 @@ the project.
   language features to upstream f2c.
 - Cross-compilation is not currently verified because the build runs the
   generated `arithchk` host tool while creating platform-specific headers.
-- Existing local or cached upstream archives are not yet revalidated against
-  the pinned SHA256 values. A newly downloaded archive is validated during the
-  download operation.
 
 ## License
 

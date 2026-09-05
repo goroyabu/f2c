@@ -64,3 +64,35 @@ endfunction()
 add_f2c_case(01_hello      hello.f      expected.txt)
 add_f2c_case(02_print_int  prog.f       expected.txt)
 add_f2c_case(03_sum        prog.f       expected.txt)
+
+# Verify archive selection and SHA256 enforcement without touching the
+# repository's real archive or download-cache directories.
+function(add_archive_hash_test case_name)
+  add_test(
+    NAME "archive_hash.${case_name}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DTEST_CASE=${case_name}"
+      "-DFETCH_MODULE=${PROJECT_SOURCE_DIR}/cmake/FetchAndUnpack.cmake"
+      "-DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/archive-hash-tests/${case_name}"
+      "-DRESOLVE_SCRIPT=${CMAKE_CURRENT_SOURCE_DIR}/archive_hash/ResolveArchive.cmake"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/archive_hash/RunArchiveHashTest.cmake")
+  set_tests_properties("archive_hash.${case_name}" PROPERTIES
+    LABELS "archive-integrity"
+    TIMEOUT 30)
+endfunction()
+
+add_archive_hash_test(local_valid_src)
+add_archive_hash_test(local_valid_libf2c)
+add_archive_hash_test(local_mismatch_strict)
+add_archive_hash_test(cache_valid)
+add_archive_hash_test(cache_mismatch_strict)
+add_archive_hash_test(download_valid)
+add_archive_hash_test(download_mismatch_strict)
+add_archive_hash_test(no_fallback_after_mismatch)
+add_archive_hash_test(local_mismatch_allowed)
+add_archive_hash_test(cache_mismatch_allowed)
+add_archive_hash_test(download_mismatch_allowed)
+add_archive_hash_test(valid_archive_allowed_mode_warning)
+add_archive_hash_test(no_fallback_after_mismatch_allowed)
+add_archive_hash_test(missing_input_allowed)
+add_archive_hash_test(download_failure_allowed)
