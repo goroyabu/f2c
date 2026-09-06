@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 project(f2c VERSION 0.2.1 LANGUAGES C)
 
 include(GNUInstallDirs)

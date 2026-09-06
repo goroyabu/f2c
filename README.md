@@ -139,7 +139,7 @@ Downstream CMake projects can consume the installed runtime through its
 exported target:
 
 ```cmake
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 project(example LANGUAGES C)
 
 find_package(f2c CONFIG REQUIRED)
