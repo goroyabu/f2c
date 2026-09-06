@@ -4,13 +4,15 @@ project(f2c VERSION 0.2.1 LANGUAGES C)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(FetchAndUnpack)
-fetch_and_unpack_configure_dirs()
-
 # Options
 option(ENABLE_SANITIZERS "Enable Address/UB sanitizers for dev builds" OFF)
 option(NET_FETCH "Allow network fetch if local tarballs are missing" ON)
+option(F2C_ALLOW_UNVERIFIED_ARCHIVES
+  "Allow SHA256-mismatched upstream archives for local experiments" OFF)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(FetchAndUnpack)
+fetch_and_unpack_configure_dirs()
 
 set(PACKAGE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
