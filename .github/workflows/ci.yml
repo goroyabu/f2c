@@ -8,10 +8,18 @@ on:
       - "v*"
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-and-test:
     name: Build and test (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -59,7 +67,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up minimum supported CMake
         if: matrix.cmake_version != ''
@@ -104,6 +112,7 @@ jobs:
   offline-build-and-test:
     name: Offline build and test (ubuntu-24.04 gcc)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     env:
       CC: gcc
@@ -111,13 +120,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Prepare offline archives
         run: |
           mkdir -p archives
-          curl -L https://www.netlib.org/f2c/src.tgz -o archives/src.tgz
-          curl -L https://www.netlib.org/f2c/libf2c.zip -o archives/libf2c.zip
+          curl --fail --show-error --location --retry 3 \
+            https://www.netlib.org/f2c/src.tgz \
+            --output archives/src.tgz
+          curl --fail --show-error --location --retry 3 \
+            https://www.netlib.org/f2c/libf2c.zip \
+            --output archives/libf2c.zip
 
       - name: Configure
         run: >
