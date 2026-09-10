@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(f2c VERSION 0.2.1 LANGUAGES C)
+project(f2c VERSION 0.3.0 LANGUAGES C)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
