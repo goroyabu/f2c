@@ -30,6 +30,7 @@ jobs:
             cxx: g++
             cmake_version: ""
             enable_sanitizers: OFF
+            verify_installed_package: true
             lsan_options: ""
           - name: ubuntu-24.04 clang+sanitizers
             os: ubuntu-24.04
@@ -37,6 +38,7 @@ jobs:
             cxx: clang++
             cmake_version: ""
             enable_sanitizers: ON
+            verify_installed_package: false
             lsan_options: detect_leaks=0
           - name: ubuntu-22.04 gcc
             os: ubuntu-22.04
@@ -44,6 +46,7 @@ jobs:
             cxx: g++
             cmake_version: "3.20.6"
             enable_sanitizers: OFF
+            verify_installed_package: true
             lsan_options: ""
           - name: macos-15 apple-clang
             os: macos-15
@@ -51,6 +54,7 @@ jobs:
             cxx: clang++
             cmake_version: ""
             enable_sanitizers: OFF
+            verify_installed_package: true
             lsan_options: ""
           - name: macos-14 apple-clang
             os: macos-14
@@ -58,6 +62,7 @@ jobs:
             cxx: clang++
             cmake_version: ""
             enable_sanitizers: OFF
+            verify_installed_package: true
             lsan_options: ""
 
     env:
@@ -101,13 +106,26 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Install
+        # Sanitizer builds are diagnostic artifacts, not supported packages.
+        if: matrix.verify_installed_package
         run: cmake --install build --prefix "${{ github.workspace }}/stage"
 
-      - name: Verify installed package with find_package
+      - name: Verify installed package with CMake example
+        if: matrix.verify_installed_package
         run: |
-          cmake -S tests/package_smoke -B build/package_smoke \
+          cmake -S examples/cmake -B build/package-example \
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
-          cmake --build build/package_smoke --parallel
+          cmake --build build/package-example --parallel
+          ctest --test-dir build/package-example --output-on-failure
+
+      - name: Verify Fortran changes trigger regeneration
+        if: matrix.verify_installed_package
+        run: |
+          cmake \
+            -DEXAMPLE_SOURCE_DIR="${{ github.workspace }}/examples/cmake" \
+            -DF2C_PREFIX="${{ github.workspace }}/stage" \
+            -DTEST_ROOT="${{ github.workspace }}/build/package-example-incremental" \
+            -P tests/package_example/RunIncrementalBuildTest.cmake
 
   offline-build-and-test:
     name: Offline build and test (ubuntu-24.04 gcc)
@@ -147,8 +165,17 @@ jobs:
       - name: Install
         run: cmake --install build --prefix "${{ github.workspace }}/stage"
 
-      - name: Verify installed package with find_package
+      - name: Verify installed package with CMake example
         run: |
-          cmake -S tests/package_smoke -B build/package_smoke \
+          cmake -S examples/cmake -B build/package-example \
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
-          cmake --build build/package_smoke --parallel
+          cmake --build build/package-example --parallel
+          ctest --test-dir build/package-example --output-on-failure
+
+      - name: Verify Fortran changes trigger regeneration
+        run: |
+          cmake \
+            -DEXAMPLE_SOURCE_DIR="${{ github.workspace }}/examples/cmake" \
+            -DF2C_PREFIX="${{ github.workspace }}/stage" \
+            -DTEST_ROOT="${{ github.workspace }}/build/package-example-incremental" \
+            -P tests/package_example/RunIncrementalBuildTest.cmake
