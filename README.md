@@ -13,7 +13,8 @@ downstream CMake integration.
 - The `f2c` command-line converter
 - The static `libf2c` runtime library
 - The public `f2c.h` header
-- An installed CMake package with the `f2c::f2c_runtime` target
+- An installed CMake package with the `f2c::f2c` converter target and the
+  `f2c::f2c_runtime` library target
 - End-to-end converter/runtime smoke tests
 - Linux and macOS CI with GCC, Clang, AppleClang, and sanitizer coverage
 - Online source acquisition by default, with an optional offline workflow
@@ -135,8 +136,8 @@ For the complete f2c command-line reference, see the
 
 ## Using the Installed CMake Package
 
-Downstream CMake projects can consume the installed runtime through its
-exported target:
+Downstream CMake projects can use the installed converter and runtime through
+their exported targets:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -144,26 +145,45 @@ project(example LANGUAGES C)
 
 find_package(f2c CONFIG REQUIRED)
 
-add_executable(example generated.c)
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${generated_dir}")
+
+add_custom_command(
+  OUTPUT "${generated_dir}/input.c"
+  COMMAND "${CMAKE_COMMAND}" -E copy
+          "${CMAKE_CURRENT_SOURCE_DIR}/input.f"
+          "${generated_dir}/input.f"
+  COMMAND "${CMAKE_COMMAND}" -E chdir "${generated_dir}"
+          "$<TARGET_FILE:f2c::f2c>" input.f
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/input.f" f2c::f2c
+  VERBATIM
+)
+
+add_executable(example "${generated_dir}/input.c")
 target_link_libraries(example PRIVATE f2c::f2c_runtime)
 ```
 
-In this example, `generated.c` is a C source file that has already been
-translated by f2c. The installed CMake package does not currently automate the
-Fortran-to-C translation step.
+Run `f2c` in a build-tree working directory so that its generated files do not
+modify the source tree. The complete
+[`examples/cmake`](examples/cmake/CMakeLists.txt) project demonstrates this
+layout with two Fortran sources, isolated generation directories, exact output
+verification, and dependency tracking for incremental rebuilds.
 
 When f2c is installed under a non-system prefix, pass that prefix while
-configuring the consumer:
+configuring the included example:
 
 ```bash
-cmake -S . -B build \
+cmake -S examples/cmake -B build/cmake-example \
   -DCMAKE_PREFIX_PATH="$HOME/.local"
-cmake --build build --parallel
+cmake --build build/cmake-example --parallel
+ctest --test-dir build/cmake-example --output-on-failure
 ```
 
-The imported target supplies the installed `f2c.h` include directory and the
-runtime library location. The current package provides a static runtime
-library.
+`f2c::f2c` is the supported imported executable target for native-build custom
+commands. `f2c::f2c_runtime` supplies the installed `f2c.h` include directory,
+the static runtime library, and the platform math-library link requirement on
+supported Unix systems. Cross-build host-tool handling is not currently
+verified, so the example documents a native-build workflow only.
 
 ## Offline Build
 

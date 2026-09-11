@@ -203,6 +203,11 @@ target_include_directories(f2c_runtime
 target_compile_definitions(f2c_runtime PRIVATE Skip_f2c_Undefs)
 set_target_properties(f2c_runtime PROPERTIES OUTPUT_NAME "f2c")
 
+# Generated code and libf2c may call functions from the Unix math library.
+if(UNIX)
+  target_link_libraries(f2c_runtime PUBLIC m)
+endif()
+
 if(ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
   target_compile_options(f2c_runtime PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
   target_link_options(f2c_runtime PRIVATE -fsanitize=address,undefined)
