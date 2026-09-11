@@ -9,6 +9,63 @@ Package-level downstream acceptance is covered separately by the example under
 `examples/cmake`. This directory focuses on converter contracts and the
 behavior of small translated programs.
 
+## Suite Scope
+
+This suite is a maintenance safety net for the upstream `f2c` version packaged
+by this repository. Its coverage describes behavior that is continuously
+verified here; an untested feature is not necessarily unsupported by upstream
+`f2c`.
+
+The suite selects small, portable contracts from five functional domains:
+
+1. scalar types, expressions, assignment, conversion, and control flow;
+2. arrays, indexing, initialization, and data layout;
+3. program units, procedures, argument passing, and shared or saved state;
+4. character and complex values and representative intrinsic functions; and
+5. formatted and file I/O and the associated runtime behavior.
+
+Source form, diagnostics, command-line options, generated-C interface
+invariants, and portability are cross-cutting concerns rather than additional
+language domains.
+
+A case is a candidate for this suite when it covers a central documented
+behavior, a translation or runtime boundary with meaningful regression risk, a
+pattern common in existing Fortran code, or behavior that repository build and
+packaging changes could break. The result must also have a stable oracle in the
+supported CI environments.
+
+Within each domain, prefer:
+
+- one minimal normal case;
+- one or two important boundary cases; and
+- a small number of cases at high-risk intersections between domains.
+
+Do not construct the Cartesian product of types, operators, control forms,
+array forms, procedure forms, and I/O modes. Add a cross-domain case only when
+the interaction has a distinct translation, ABI, or runtime risk.
+
+The following are outside the suite's completeness claim:
+
+- proof of full Fortran 77 conformance;
+- exhaustive syntax, option, error, or feature-combination coverage;
+- source-line coverage targets for upstream translator code;
+- complete generated-C snapshots or incidental formatting details;
+- processor-dependent numeric, storage, or I/O results without a portable
+  oracle; and
+- historical regressions or extensions whose current relevance has not been
+  established.
+
+Documented `f2c` extensions, uncommon language features, differential checks,
+and historical regression candidates may be added selectively when they are
+reproducible, relevant to the pinned upstream version, and maintainable across
+supported environments.
+
+Coverage is considered representative when every functional domain has useful
+baseline coverage, important cross-domain boundaries are exercised, and every
+known omission is recorded as partial, deferred, or intentionally out of
+scope. It is not measured by a fixed test count or a claim of complete compiler
+correctness.
+
 ## Contract Sources
 
 Tests use the following evidence, in descending order of authority:
