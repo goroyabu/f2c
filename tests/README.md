@@ -48,18 +48,18 @@ compilation, linkage, execution, or result comparison.
 
 ## Initial Contract Matrix
 
-The status column distinguishes existing coverage from cases planned by
-issue #34. The implementation may combine compatible assertions in one test,
-but each contract remains independently identifiable.
+The status column distinguishes the initial coverage implemented by issue #34
+from areas deferred to later work. The implementation may combine compatible
+assertions in one test, but each contract remains independently identifiable.
 
 | Contract | Layer | Basis | Observable oracle | Status |
 | --- | --- | --- | --- | --- |
-| A simple main program translates, compiles, links with `libf2c`, and prints a string. | Pipeline sentinel | Existing `01_hello` case; upstream manual description of generated C and runtime linkage. | Translation, compilation, linkage, and execution succeed; exit status is zero; stdout is exactly ` HELLO\n`; stderr is empty during execution. | Existing; migrate to the contract harness. |
-| Integer assignment survives translation and runtime output. | Pipeline sentinel | Existing `02_print_int` case. | All pipeline phases succeed; exit status is zero; stdout is exactly ` 42\n`; stderr is empty during execution. | Existing; migrate to the contract harness. |
-| A simple integer `DO` loop preserves its result. | Pipeline sentinel | Existing `03_sum` case. | All pipeline phases succeed; exit status is zero; stdout is exactly ` 15\n`; stderr is empty during execution. | Existing; migrate to the contract harness. |
-| A named `.f` input produces a same-basename `.c` file in the converter working directory. | CLI, normal file path | Upstream manual, DESCRIPTION and FILES; current upstream behavior. | Exit status is zero; stdout is empty; the expected C file exists and is nonempty; no unexpected C file is created; the input file is unchanged. Translation diagnostics are captured separately. | Planned in issue #34. |
-| With no named Fortran input, `f2c` reads standard input and writes generated C to standard output. | CLI, alternate input/output path | Upstream manual, DESCRIPTION; current upstream behavior. | Exit status is zero; stdout is nonempty generated C; the converter creates no separate `.c` file as a side effect; the source used to supply stdin is unchanged; diagnostics remain separate on stderr. Compile the captured stdout rather than comparing a full-file snapshot. | Planned in issue #34. |
-| A positional input whose name does not end in `.f` or `.F` is rejected. | CLI, error path | Upstream manual input-name contract; validation in the pinned upstream `main.c`; current upstream behavior. | Exit status is one; stdout is empty; stderr reports the rejected filename; no C output is created; the input file, if present, is unchanged. | Planned in issue #34. |
+| A simple main program translates, compiles, links with `libf2c`, and prints a string. | Pipeline sentinel | Existing `01_hello` case; upstream manual description of generated C and runtime linkage. | Translation, compilation, linkage, and execution succeed; exit status is zero; stdout is exactly ` HELLO\n`; stderr is empty during execution. | Covered by `pipeline.01_hello`. |
+| Integer assignment survives translation and runtime output. | Pipeline sentinel | Existing `02_print_int` case. | All pipeline phases succeed; exit status is zero; stdout is exactly ` 42\n`; stderr is empty during execution. | Covered by `pipeline.02_print_int`. |
+| A simple integer `DO` loop preserves its result. | Pipeline sentinel | Existing `03_sum` case. | All pipeline phases succeed; exit status is zero; stdout is exactly ` 15\n`; stderr is empty during execution. | Covered by `pipeline.03_sum`. |
+| A named `.f` input produces a same-basename `.c` file in the converter working directory. | CLI, normal file path | Upstream manual, DESCRIPTION and FILES; current upstream behavior. | Exit status is zero; stdout is empty; the expected C file exists and is nonempty; no unexpected C file is created; the input file is unchanged. Translation diagnostics are captured separately. | Covered by `cli.file_input`. |
+| With no named Fortran input, `f2c` reads standard input and writes generated C to standard output. | CLI, alternate input/output path | Upstream manual, DESCRIPTION; current upstream behavior. | Exit status is zero; stdout is nonempty generated C; the converter creates no separate `.c` file as a side effect; the source used to supply stdin is unchanged; diagnostics remain separate on stderr. Compile the captured stdout rather than comparing a full-file snapshot. | Covered by `cli.stdin_stdout`. |
+| A positional input whose name does not end in `.f` or `.F` is rejected. | CLI, error path | Upstream manual input-name contract; validation in the pinned upstream `main.c`; current upstream behavior. | Exit status is one; stdout is empty; stderr reports the rejected filename; no C output is created; the input file, if present, is unchanged. | Covered by `cli.invalid_suffix`. |
 
 For progress diagnostics emitted during successful translation, the harness
 captures stderr independently but does not treat incidental spacing or complete

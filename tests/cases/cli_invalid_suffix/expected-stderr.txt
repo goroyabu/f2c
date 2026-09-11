@@ -1,0 +1,1 @@
+"input.txt" does not end in .f or .F
