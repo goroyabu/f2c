@@ -9,37 +9,21 @@ function(add_f2c_case name fortran_src expected_txt)
   file(MAKE_DIRECTORY "${WORK}")
 
   # 2) Convert .f -> .c using the built f2c
+  set(INPUT_F "${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${fortran_src}")
   get_filename_component(_base "${fortran_src}" NAME_WE)
   set(OUT_C "${WORK}/${_base}.c")
   add_custom_command(
     OUTPUT "${OUT_C}"
-    BYPRODUCTS "${WORK}/f2c.out" "${WORK}/f2c.err"
-    COMMAND "${CMAKE_COMMAND}" -E copy
-            "${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${fortran_src}"
-            "${WORK}/${fortran_src}"
-    COMMAND ${CMAKE_COMMAND} -E chdir "${WORK}" "${CMAKE_BINARY_DIR}/f2c" "${fortran_src}"
-    # COMMAND "${CMAKE_COMMAND}" -E rm -f "${WORK}/${_base}.c" "${WORK}/f2c.out" "${WORK}/f2c.err"
-    # COMMAND ${CMAKE_COMMAND} -E chdir "${WORK}" /bin/sh -c "\"$<TARGET_FILE:f2c>\" < \"${fortran_src}\" > f2c.out 2> f2c.err"
-    # COMMAND ${CMAKE_COMMAND} -E chdir "${WORK}" /bin/sh -c "test -s f2c.out || ( echo 'f2c failed; stderr follows:' ; /bin/cat f2c.err ; exit 3 )"
-    # COMMAND "${CMAKE_COMMAND}" -E rename "${WORK}/f2c.out" "${OUT_C}"
-    DEPENDS f2c
-    COMMENT "Converting ${fortran_src} -> ${name}.c"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${INPUT_F}" "${WORK}/${fortran_src}"
+    COMMAND "${CMAKE_COMMAND}" -E chdir "${WORK}"
+            "$<TARGET_FILE:f2c>" "${fortran_src}"
+    DEPENDS f2c "${INPUT_F}"
+    COMMENT "Translation phase: ${fortran_src} -> ${_base}.c"
     VERBATIM)
-
-  # Create a per-case generation target for serialization
-  add_custom_target("gen_${name}" DEPENDS "${OUT_C}")
-  # Chain generation targets so that f2c conversions run sequentially
-  get_property(_prev GLOBAL PROPERTY F2C_LAST_GEN_TARGET)
-  if(_prev)
-    add_dependencies("gen_${name}" "${_prev}")
-  endif()
-  set_property(GLOBAL PROPERTY F2C_LAST_GEN_TARGET "gen_${name}")
 
   # 3) Build the program against libf2c runtime
   add_executable("${name}_exe" "${OUT_C}")
-  # Ensure each test executable waits for serialized conversion to complete
-  add_dependencies("${name}_exe" "gen_${name}")
-  add_dependencies("${name}_exe" f2c_runtime)
   target_include_directories("${name}_exe" PRIVATE "${GEN_DIR}")
   target_link_libraries("${name}_exe" PRIVATE f2c_runtime)
   if(ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
@@ -47,14 +31,16 @@ function(add_f2c_case name fortran_src expected_txt)
     target_link_options("${name}_exe" PRIVATE -fsanitize=address,undefined)
   endif()
 
-  # 4) Register the test; read expected stdout and use it as a regex (escaped)
-  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${expected_txt}" _exp_raw)
-  string(STRIP "${_exp_raw}" _exp_raw)
-
-  add_test(NAME "${name}" COMMAND "${name}_exe")
-  set_tests_properties("${name}" PROPERTIES
-    LABELS "smoke"
-    PASS_REGULAR_EXPRESSION "${_exp_raw}"
+  # 4) Register the test with exact process-output verification.
+  add_test(
+    NAME "pipeline.${name}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DPROGRAM=$<TARGET_FILE:${name}_exe>"
+      "-DEXPECTED_STDOUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${expected_txt}"
+      "-DWORK_DIR=${WORK}/run"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunProgramContract.cmake")
+  set_tests_properties("pipeline.${name}" PROPERTIES
+    LABELS "pipeline"
     ENVIRONMENT "LC_ALL=C;TZ=UTC"
     TIMEOUT 10
   )
@@ -64,6 +50,57 @@ endfunction()
 add_f2c_case(01_hello      hello.f      expected.txt)
 add_f2c_case(02_print_int  prog.f       expected.txt)
 add_f2c_case(03_sum        prog.f       expected.txt)
+
+# Add a black-box command-line contract test.
+function(add_f2c_cli_case name)
+  set(options EXPECT_STDOUT_EMPTY COMPILE_STDOUT)
+  set(one_value_args
+    MODE SOURCE EXPECTED_EXIT EXPECTED_STDERR_FILE EXPECTED_GENERATED_FILE)
+  cmake_parse_arguments(CLI
+    "${options}" "${one_value_args}" "" ${ARGN})
+
+  add_test(
+    NAME "cli.${name}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DCASE_NAME=${name}"
+      "-DF2C_PROGRAM=$<TARGET_FILE:f2c>"
+      "-DSOURCE_FILE=${CLI_SOURCE}"
+      "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/cli/${name}"
+      "-DMODE=${CLI_MODE}"
+      "-DEXPECTED_EXIT=${CLI_EXPECTED_EXIT}"
+      "-DEXPECT_STDOUT_EMPTY=${CLI_EXPECT_STDOUT_EMPTY}"
+      "-DEXPECTED_STDERR_FILE=${CLI_EXPECTED_STDERR_FILE}"
+      "-DEXPECTED_GENERATED_FILE=${CLI_EXPECTED_GENERATED_FILE}"
+      "-DCOMPILE_STDOUT=${CLI_COMPILE_STDOUT}"
+      "-DC_COMPILER=${CMAKE_C_COMPILER}"
+      "-DF2C_INCLUDE_DIR=${GEN_DIR}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCliContract.cmake")
+  set_tests_properties("cli.${name}" PROPERTIES
+    LABELS "cli"
+    ENVIRONMENT "LC_ALL=C;TZ=UTC"
+    TIMEOUT 10)
+endfunction()
+
+add_f2c_cli_case(file_input
+  MODE FILE
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/01_hello/hello.f"
+  EXPECTED_EXIT 0
+  EXPECT_STDOUT_EMPTY
+  EXPECTED_GENERATED_FILE hello.c)
+
+add_f2c_cli_case(stdin_stdout
+  MODE STDIN
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/01_hello/hello.f"
+  EXPECTED_EXIT 0
+  COMPILE_STDOUT)
+
+add_f2c_cli_case(invalid_suffix
+  MODE FILE
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli_invalid_suffix/input.txt"
+  EXPECTED_EXIT 1
+  EXPECT_STDOUT_EMPTY
+  EXPECTED_STDERR_FILE
+    "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli_invalid_suffix/expected-stderr.txt")
 
 # Verify archive selection and SHA256 enforcement without touching the
 # repository's real archive or download-cache directories.
