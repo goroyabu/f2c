@@ -58,6 +58,10 @@ add_f2c_case(08_block_if                     prog.f expected.txt)
 add_f2c_case(09_logical_if                   prog.f expected.txt)
 add_f2c_case(10_do_negative_step             prog.f expected.txt)
 add_f2c_case(11_do_zero_trip                 prog.f expected.txt)
+add_f2c_case(12_array_1d_access              prog.f expected.txt)
+add_f2c_case(13_array_lower_bound            prog.f expected.txt)
+add_f2c_case(14_array_2d_order               prog.f expected.txt)
+add_f2c_case(15_array_data_init              prog.f expected.txt)
 
 # Add a black-box command-line contract test.
 function(add_f2c_cli_case name)

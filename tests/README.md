@@ -153,6 +153,28 @@ within one expression, floating-point rounding boundaries, additional `DO`
 increments, and less common control-flow forms remain candidates for later
 tests when they address a distinct translation or regression risk.
 
+## Array Contract Matrix
+
+Issue #39 adds baseline coverage for array indexing, declared lower bounds,
+element ordering, and static initialization. The two-dimensional ordering case
+uses a `DATA` sequence because assigning and reading the same subscripts would
+not expose an implementation that used a consistently incorrect layout. A
+separate one-dimensional case keeps basic `DATA` initialization independently
+diagnosable.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| Ordinary one-dimensional array elements can be assigned and referenced at each declared subscript. | Fortran 77 Sections 5.2, 5.3, and 5.4. | Assigning distinct values at subscripts 1, 2, and 3 produces exactly `11 22 33`. | Covered by `pipeline.12_array_1d_access`. |
+| An explicit lower bound determines the valid subscript values and element mapping. | Fortran 77 Sections 5.2.1 and 5.4. | Assigning distinct values at subscripts -1, 0, and 1 produces exactly `41 42 43`. | Covered by `pipeline.13_array_lower_bound`. |
+| Two-dimensional elements follow Fortran array element ordering, with the first subscript varying fastest. | Fortran 77 Sections 5.2.4, 5.2.5, and 9. | Initializing `A(2,2)` with `11, 21, 12, 22` and reading `A(1,1)`, `A(2,1)`, `A(1,2)`, and `A(2,2)` produces exactly `11 21 12 22`. | Covered by `pipeline.14_array_2d_order`. |
+| A simple `DATA` value list establishes the initial values of an array in array element order. | Fortran 77 Sections 5.2.4 and 9. | A three-element array initialized with 4, 5, and 6 produces exactly `4 5 6` before any executable assignment. | Covered by `pipeline.15_array_data_init`. |
+
+This baseline does not cover implied-DO initialization, array arguments,
+adjustable or assumed-size arrays, ABI-level layout assertions, shared or
+overlaid storage through `COMMON` or `EQUIVALENCE`, character arrays, or
+undefined out-of-range subscripts. These areas remain deferred to later
+contract slices where they have a distinct semantic, ABI, or runtime risk.
+
 ## Initial Coverage Boundary
 
 Issue #34 establishes the harness and representative coverage for a normal CLI
@@ -166,8 +188,8 @@ not be inferred as covered by this initial matrix:
 - prototype generation and source-format options;
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - stable generated-C ABI and calling-convention invariants;
-- systematic numeric, array, procedure, character, complex, shared-state, and
-  file-I/O semantics;
+- broader numeric semantics, advanced array behavior, procedures, character
+  and complex values, shared state, and file-I/O semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 
