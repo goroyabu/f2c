@@ -1,7 +1,7 @@
 # Comments and messages are written in English for maintainability.
 include(CTest)
 
-# Add one smoke test case.
+# Add one translated-program contract case.
 # Usage: add_f2c_case(<name> <fortran_src> <expected_txt>)
 function(add_f2c_case name fortran_src expected_txt)
   # 1) Per-case working directory in the build tree (keeps source tree clean)
@@ -50,6 +50,14 @@ endfunction()
 add_f2c_case(01_hello      hello.f      expected.txt)
 add_f2c_case(02_print_int  prog.f       expected.txt)
 add_f2c_case(03_sum        prog.f       expected.txt)
+add_f2c_case(04_expr_precedence              prog.f expected.txt)
+add_f2c_case(05_integer_division             prog.f expected.txt)
+add_f2c_case(06_real_assignment_conversion   prog.f expected.txt)
+add_f2c_case(07_double_assignment_conversion prog.f expected.txt)
+add_f2c_case(08_block_if                     prog.f expected.txt)
+add_f2c_case(09_logical_if                   prog.f expected.txt)
+add_f2c_case(10_do_negative_step             prog.f expected.txt)
+add_f2c_case(11_do_zero_trip                 prog.f expected.txt)
 
 # Add a black-box command-line contract test.
 function(add_f2c_cli_case name)

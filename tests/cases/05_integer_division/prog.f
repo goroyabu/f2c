@@ -1,0 +1,6 @@
+      PROGRAM IDIV
+      INTEGER RESULT
+      RESULT = 5 / 2
+      WRITE (*, 100) RESULT
+  100 FORMAT (I1)
+      END

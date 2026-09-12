@@ -70,12 +70,14 @@ correctness.
 
 Tests use the following evidence, in descending order of authority:
 
-1. The upstream [`f2c` manual](https://www.netlib.org/f2c/f2c.1).
-2. Upstream README files and interface headers.
-3. The upstream source archive selected and verified by
+1. The [Fortran 77 standard](https://wg5-fortran.org/ARCHIVE/Fortran77.html)
+   for language semantics.
+2. The upstream [`f2c` manual](https://www.netlib.org/f2c/f2c.1).
+3. Upstream README files and interface headers.
+4. The upstream source archive selected and verified by
    [`CMakeLists.txt`](../CMakeLists.txt).
-4. Behavior reproduced with the currently pinned upstream source.
-5. Historical change-log examples, only after their current relevance is
+5. Behavior reproduced with the currently pinned upstream source.
+6. Historical change-log examples, only after their current relevance is
    established.
 
 Observed behavior alone is not automatically a compatibility contract. When
@@ -122,6 +124,34 @@ For progress diagnostics emitted during successful translation, the harness
 captures stderr independently but does not treat incidental spacing or complete
 procedure-progress wording as a stable public interface. Error tests assert the
 specific diagnostic meaning needed to identify the rejected input.
+
+## Scalar and Control-Flow Contract Matrix
+
+Issue #37 extends the semantic baseline with one primary language contract per
+test case. A case may contain multiple inputs or expressions when they are
+needed to demonstrate the same contract, but unrelated failure causes remain
+separate.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| Multiplication binds more tightly than addition, while parentheses override the default precedence. | Fortran 77 Sections 6.1.2 and 6.6.3. | `2 + 3 * 4` produces 14 and `(2 + 3) * 4` produces 20. | Covered by `pipeline.04_expr_precedence`. |
+| Division of two integer operands produces an integer result. | Fortran 77 Section 6.1.5. | `5 / 2` produces 2. | Covered by `pipeline.05_integer_division`. |
+| Assigning a positive non-integral `REAL` value to an `INTEGER` truncates its fractional part. | Fortran 77 Section 10.1. | Assigning 2.5 produces 2. | Covered by `pipeline.06_real_assignment_conversion`. |
+| Assigning a positive non-integral `DOUBLE PRECISION` value to an `INTEGER` truncates its fractional part. | Fortran 77 Section 10.1. | Assigning 4.5 produces 4. | Covered by `pipeline.07_double_assignment_conversion`. |
+| Block `IF`, `ELSE IF`, and `ELSE` select the matching branch. | Fortran 77 Sections 11.6 through 11.9. | Negative, zero, and positive inputs select branch markers 1, 2, and 3 respectively. | Covered by `pipeline.08_block_if`. |
+| A relational and logical expression can control a logical `IF`. | Fortran 77 Sections 6.3, 6.4, and 11.5. | A true expression using `.GT.`, `.AND.`, and `.NOT.` executes its guarded assignment, while a false expression does not. | Covered by `pipeline.09_logical_if`. |
+| A `DO` loop accepts a negative increment and visits the descending sequence. | Fortran 77 Sections 11.10.3, 11.10.4, and 11.10.7. | Iterating from 5 to 1 by -2 produces a sum of 9. | Covered by `pipeline.10_do_negative_step`. |
+| A `DO` loop whose initial bounds imply zero iterations does not execute its body. | Fortran 77 Sections 11.10.3 and 11.10.4; default `f2c` behavior without `-onetrip`. | Variable bounds from 3 to 1 with the default positive increment leave the count at zero. | Covered by `pipeline.11_do_zero_trip`. |
+
+These cases deliberately use exact integer output. The `REAL` and `DOUBLE
+PRECISION` inputs are exactly representable, so the contracts do not require a
+floating-point tolerance or depend on formatted floating-point output.
+
+This baseline does not enumerate every arithmetic, relational, or logical
+operator or their Cartesian product with all scalar types. Mixed-type operands
+within one expression, floating-point rounding boundaries, additional `DO`
+increments, and less common control-flow forms remain candidates for later
+tests when they address a distinct translation or regression risk.
 
 ## Initial Coverage Boundary
 

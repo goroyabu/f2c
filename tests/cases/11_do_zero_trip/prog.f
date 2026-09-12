@@ -1,0 +1,10 @@
+      PROGRAM DOZERO
+      INTEGER I, LOWER, UPPER, COUNT
+      LOWER = 3
+      UPPER = 1
+      COUNT = 0
+      DO 10 I = LOWER, UPPER
+   10 COUNT = COUNT + 1
+      WRITE (*, 100) COUNT
+  100 FORMAT (I1)
+      END
