@@ -1,0 +1,8 @@
+      PROGRAM RCONV
+      INTEGER RESULT
+      REAL VALUE
+      VALUE = 5.0 / 2.0
+      RESULT = VALUE
+      WRITE (*, 100) RESULT
+  100 FORMAT (I1)
+      END
