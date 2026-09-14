@@ -66,6 +66,30 @@ known omission is recorded as partial, deferred, or intentionally out of
 scope. It is not measured by a fixed test count or a claim of complete compiler
 correctness.
 
+## Repository Layout
+
+Fixtures under `cases` are organized by verification layer and semantic domain:
+
+```text
+cases/
+├── pipeline/
+│   └── smoke/
+├── semantics/
+│   ├── arrays/
+│   └── scalar_control/
+└── cli/
+```
+
+The `pipeline/smoke` directory contains minimal end-to-end sentinels that keep
+the translation, C compilation, runtime linkage, and execution path covered.
+The `semantics/<domain>` directories contain specification-based contracts for
+the functional domains defined above. The `cli` directory contains input and
+expected-output fixtures for black-box converter command tests.
+
+Create a new semantic domain directory only when at least one approved case is
+ready to be added. Fixture paths describe organization, not test identity:
+CTest names and labels remain stable when a case is moved between directories.
+
 ## Contract Sources
 
 Tests use the following evidence, in descending order of authority:
