@@ -2,14 +2,15 @@
 include(CTest)
 
 # Add one translated-program contract case.
-# Usage: add_f2c_case(<name> <fortran_src> <expected_txt>)
-function(add_f2c_case name fortran_src expected_txt)
+# Usage: add_f2c_case(<name> <case_dir> <fortran_src> <expected_txt>)
+function(add_f2c_case name case_dir fortran_src expected_txt)
   # 1) Per-case working directory in the build tree (keeps source tree clean)
   set(WORK "${CMAKE_BINARY_DIR}/tests/${name}")
   file(MAKE_DIRECTORY "${WORK}")
 
   # 2) Convert .f -> .c using the built f2c
-  set(INPUT_F "${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${fortran_src}")
+  set(CASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cases/${case_dir}")
+  set(INPUT_F "${CASE_SOURCE_DIR}/${fortran_src}")
   get_filename_component(_base "${fortran_src}" NAME_WE)
   set(OUT_C "${WORK}/${_base}.c")
   add_custom_command(
@@ -36,7 +37,7 @@ function(add_f2c_case name fortran_src expected_txt)
     NAME "pipeline.${name}"
     COMMAND "${CMAKE_COMMAND}"
       "-DPROGRAM=$<TARGET_FILE:${name}_exe>"
-      "-DEXPECTED_STDOUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cases/${name}/${expected_txt}"
+      "-DEXPECTED_STDOUT_FILE=${CASE_SOURCE_DIR}/${expected_txt}"
       "-DWORK_DIR=${WORK}/run"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunProgramContract.cmake")
   set_tests_properties("pipeline.${name}" PROPERTIES
@@ -47,21 +48,33 @@ function(add_f2c_case name fortran_src expected_txt)
 endfunction()
 
 # ---- Cases ----
-add_f2c_case(01_hello      hello.f      expected.txt)
-add_f2c_case(02_print_int  prog.f       expected.txt)
-add_f2c_case(03_sum        prog.f       expected.txt)
-add_f2c_case(04_expr_precedence              prog.f expected.txt)
-add_f2c_case(05_integer_division             prog.f expected.txt)
-add_f2c_case(06_real_assignment_conversion   prog.f expected.txt)
-add_f2c_case(07_double_assignment_conversion prog.f expected.txt)
-add_f2c_case(08_block_if                     prog.f expected.txt)
-add_f2c_case(09_logical_if                   prog.f expected.txt)
-add_f2c_case(10_do_negative_step             prog.f expected.txt)
-add_f2c_case(11_do_zero_trip                 prog.f expected.txt)
-add_f2c_case(12_array_1d_access              prog.f expected.txt)
-add_f2c_case(13_array_lower_bound            prog.f expected.txt)
-add_f2c_case(14_array_2d_order               prog.f expected.txt)
-add_f2c_case(15_array_data_init              prog.f expected.txt)
+add_f2c_case(01_hello pipeline/smoke/01_hello hello.f expected.txt)
+add_f2c_case(02_print_int pipeline/smoke/02_print_int prog.f expected.txt)
+add_f2c_case(03_sum pipeline/smoke/03_sum prog.f expected.txt)
+add_f2c_case(04_expr_precedence
+  semantics/scalar_control/04_expr_precedence prog.f expected.txt)
+add_f2c_case(05_integer_division
+  semantics/scalar_control/05_integer_division prog.f expected.txt)
+add_f2c_case(06_real_assignment_conversion
+  semantics/scalar_control/06_real_assignment_conversion prog.f expected.txt)
+add_f2c_case(07_double_assignment_conversion
+  semantics/scalar_control/07_double_assignment_conversion prog.f expected.txt)
+add_f2c_case(08_block_if
+  semantics/scalar_control/08_block_if prog.f expected.txt)
+add_f2c_case(09_logical_if
+  semantics/scalar_control/09_logical_if prog.f expected.txt)
+add_f2c_case(10_do_negative_step
+  semantics/scalar_control/10_do_negative_step prog.f expected.txt)
+add_f2c_case(11_do_zero_trip
+  semantics/scalar_control/11_do_zero_trip prog.f expected.txt)
+add_f2c_case(12_array_1d_access
+  semantics/arrays/12_array_1d_access prog.f expected.txt)
+add_f2c_case(13_array_lower_bound
+  semantics/arrays/13_array_lower_bound prog.f expected.txt)
+add_f2c_case(14_array_2d_order
+  semantics/arrays/14_array_2d_order prog.f expected.txt)
+add_f2c_case(15_array_data_init
+  semantics/arrays/15_array_data_init prog.f expected.txt)
 
 # Add a black-box command-line contract test.
 function(add_f2c_cli_case name)
@@ -95,24 +108,24 @@ endfunction()
 
 add_f2c_cli_case(file_input
   MODE FILE
-  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/01_hello/hello.f"
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/pipeline/smoke/01_hello/hello.f"
   EXPECTED_EXIT 0
   EXPECT_STDOUT_EMPTY
   EXPECTED_GENERATED_FILE hello.c)
 
 add_f2c_cli_case(stdin_stdout
   MODE STDIN
-  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/01_hello/hello.f"
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/pipeline/smoke/01_hello/hello.f"
   EXPECTED_EXIT 0
   COMPILE_STDOUT)
 
 add_f2c_cli_case(invalid_suffix
   MODE FILE
-  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli_invalid_suffix/input.txt"
+  SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli/invalid_suffix/input.txt"
   EXPECTED_EXIT 1
   EXPECT_STDOUT_EMPTY
   EXPECTED_STDERR_FILE
-    "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli_invalid_suffix/expected-stderr.txt")
+    "${CMAKE_CURRENT_SOURCE_DIR}/cases/cli/invalid_suffix/expected-stderr.txt")
 
 # Verify archive selection and SHA256 enforcement without touching the
 # repository's real archive or download-cache directories.
