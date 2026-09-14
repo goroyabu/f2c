@@ -76,6 +76,7 @@ cases/
 │   └── smoke/
 ├── semantics/
 │   ├── arrays/
+│   ├── procedures/
 │   └── scalar_control/
 └── cli/
 ```
@@ -199,6 +200,26 @@ overlaid storage through `COMMON` or `EQUIVALENCE`, character arrays, or
 undefined out-of-range subscripts. These areas remain deferred to later
 contract slices where they have a distinct semantic, ABI, or runtime risk.
 
+## Procedure Contract Matrix
+
+Issue #43 adds baseline coverage for external subroutines, external integer
+functions, and scalar and one-dimensional array argument association. Each
+case contains one main program and one external procedure so that subroutine,
+function, and array-association failures remain independently diagnosable.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| A scalar actual argument is associated with a scalar dummy argument, and a definition made by the subroutine is visible to the caller after return. | Fortran 77 Sections 15.6 and 15.9.3.2. | Starting with 7 and adding 5 through `ADD5(VALUE)` produces exactly `12`. | Covered by `pipeline.16_subroutine_scalar_argument`. |
+| An external integer function receives an argument and supplies the function value used by the calling expression. | Fortran 77 Sections 15.2 and 15.5. | Evaluating `TWICE(7)` produces exactly `14`. | Covered by `pipeline.17_integer_function`. |
+| A one-dimensional actual array is associated with a dummy array, and element definitions made by the subroutine are visible to the caller. | Fortran 77 Section 15.9.3.3. | Starting with 10, 20, and 30 and adding 1, 2, and 3 through `BUMP3(A)` produces exactly `11 22 33`. | Covered by `pipeline.18_array_argument`. |
+
+These are Fortran-level observable contracts. They do not claim a stable C
+calling convention, generated symbol spelling, or exact generated-C form.
+Adjustable and assumed-size arrays, procedure arguments, statement functions,
+`ENTRY`, alternate returns, recursion, character hidden-length arguments, and
+complex function results remain deferred to later contract slices where they
+have a distinct semantic, ABI, or maintenance risk.
+
 ## Initial Coverage Boundary
 
 Issue #34 establishes the harness and representative coverage for a normal CLI
@@ -212,8 +233,9 @@ not be inferred as covered by this initial matrix:
 - prototype generation and source-format options;
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - stable generated-C ABI and calling-convention invariants;
-- broader numeric semantics, advanced array behavior, procedures, character
-  and complex values, shared state, and file-I/O semantics;
+- broader numeric semantics, advanced array behavior, advanced procedure
+  behavior, character and complex values, shared state, and file-I/O
+  semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 

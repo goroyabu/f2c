@@ -75,6 +75,12 @@ add_f2c_case(14_array_2d_order
   semantics/arrays/14_array_2d_order prog.f expected.txt)
 add_f2c_case(15_array_data_init
   semantics/arrays/15_array_data_init prog.f expected.txt)
+add_f2c_case(16_subroutine_scalar_argument
+  semantics/procedures/16_subroutine_scalar_argument prog.f expected.txt)
+add_f2c_case(17_integer_function
+  semantics/procedures/17_integer_function prog.f expected.txt)
+add_f2c_case(18_array_argument
+  semantics/procedures/18_array_argument prog.f expected.txt)
 
 # Add a black-box command-line contract test.
 function(add_f2c_cli_case name)
