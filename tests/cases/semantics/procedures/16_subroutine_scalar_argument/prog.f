@@ -1,0 +1,13 @@
+      PROGRAM SUBARG
+      INTEGER VALUE
+      VALUE = 7
+      CALL ADD5(VALUE)
+      WRITE (*, 100) VALUE
+  100 FORMAT (I2)
+      END
+
+      SUBROUTINE ADD5(VALUE)
+      INTEGER VALUE
+      VALUE = VALUE + 5
+      RETURN
+      END
