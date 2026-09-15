@@ -1,0 +1,1 @@
+default-real-function ok

@@ -1,0 +1,5 @@
+      REAL FUNCTION HALF(VALUE)
+      REAL VALUE
+      HALF = VALUE / 2.0
+      RETURN
+      END

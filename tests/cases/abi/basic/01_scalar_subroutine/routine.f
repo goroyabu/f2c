@@ -1,0 +1,5 @@
+      SUBROUTINE INCR(VALUE)
+      INTEGER VALUE
+      VALUE = VALUE + 5
+      RETURN
+      END

@@ -1,0 +1,5 @@
+      INTEGER FUNCTION TWICE(VALUE)
+      INTEGER VALUE
+      TWICE = VALUE * 2
+      RETURN
+      END
