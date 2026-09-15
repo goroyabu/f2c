@@ -2,8 +2,12 @@
 include(CTest)
 
 # Add one translated-program contract case.
-# Usage: add_f2c_case(<name> <case_dir> <fortran_src> <expected_txt>)
+# Usage: add_f2c_case(<name> <case_dir> <fortran_src> <expected_txt>
+#                      [F2C_ARGS <arg>...]
+#                      [EXPECTED_C_SUBSTRING <text>])
 function(add_f2c_case name case_dir fortran_src expected_txt)
+  cmake_parse_arguments(CASE "" "EXPECTED_C_SUBSTRING" "F2C_ARGS" ${ARGN})
+
   # 1) Per-case working directory in the build tree (keeps source tree clean)
   set(WORK "${CMAKE_BINARY_DIR}/tests/${name}")
   file(MAKE_DIRECTORY "${WORK}")
@@ -18,8 +22,13 @@ function(add_f2c_case name case_dir fortran_src expected_txt)
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${INPUT_F}" "${WORK}/${fortran_src}"
     COMMAND "${CMAKE_COMMAND}" -E chdir "${WORK}"
-            "$<TARGET_FILE:f2c>" "${fortran_src}"
+            "$<TARGET_FILE:f2c>" ${CASE_F2C_ARGS} "${fortran_src}"
+    COMMAND "${CMAKE_COMMAND}"
+            "-DINPUT_FILE=${OUT_C}"
+            "-DEXPECTED_SUBSTRING=${CASE_EXPECTED_C_SUBSTRING}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/AssertFileContains.cmake"
     DEPENDS f2c "${INPUT_F}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/AssertFileContains.cmake"
     COMMENT "Translation phase: ${fortran_src} -> ${_base}.c"
     VERBATIM)
 
@@ -128,6 +137,16 @@ add_f2c_case(17_integer_function
   semantics/procedures/17_integer_function prog.f expected.txt)
 add_f2c_case(18_array_argument
   semantics/procedures/18_array_argument prog.f expected.txt)
+add_f2c_case(19_named_common
+  semantics/shared_state/19_named_common prog.f expected.txt)
+add_f2c_case(20_saved_local
+  semantics/shared_state/20_saved_local prog.f expected.txt
+  F2C_ARGS -a
+  EXPECTED_C_SUBSTRING "static integer counter;")
+add_f2c_case(21_equivalence_array_element
+  semantics/shared_state/21_equivalence_array_element prog.f expected.txt)
+add_f2c_case(22_block_data_common_init
+  semantics/shared_state/22_block_data_common_init prog.f expected.txt)
 
 add_f2c_abi_case(scalar_subroutine
   abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)

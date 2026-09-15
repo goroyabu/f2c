@@ -80,7 +80,8 @@ cases/
 └── semantics/
     ├── arrays/
     ├── procedures/
-    └── scalar_control/
+    ├── scalar_control/
+    └── shared_state/
 ```
 
 The `pipeline/smoke` directory contains minimal end-to-end sentinels that keep
@@ -201,10 +202,11 @@ diagnosable.
 | A simple `DATA` value list establishes the initial values of an array in array element order. | Fortran 77 Sections 5.2.4 and 9. | A three-element array initialized with 4, 5, and 6 produces exactly `4 5 6` before any executable assignment. | Covered by `pipeline.15_array_data_init`. |
 
 This baseline does not cover implied-DO initialization, array arguments,
-adjustable or assumed-size arrays, ABI-level layout assertions, shared or
-overlaid storage through `COMMON` or `EQUIVALENCE`, character arrays, or
-undefined out-of-range subscripts. These areas remain deferred to later
-contract slices where they have a distinct semantic, ABI, or runtime risk.
+adjustable or assumed-size arrays, ABI-level layout assertions, advanced
+shared or overlaid storage beyond the dedicated shared-state matrix, character
+arrays, or undefined out-of-range subscripts. These areas remain deferred to
+later contract slices where they have a distinct semantic, ABI, or runtime
+risk.
 
 ## Procedure Contract Matrix
 
@@ -225,6 +227,42 @@ Adjustable and assumed-size arrays, procedure arguments, statement functions,
 `ENTRY`, alternate returns, recursion, character hidden-length arguments, and
 complex function results remain deferred to later contract slices where they
 have a distinct semantic, ABI, or maintenance risk.
+
+## Shared and Saved State Contract Matrix
+
+Issue #47 adds representative storage-association and persistence contracts.
+Each fixture keeps all of its program units in one Fortran source file, so
+these cases verify Fortran-visible behavior without deciding how independently
+translated sources should coordinate ownership of common storage.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| A named common block associates its storage sequence across program units even when their local variable names differ. | Fortran 77 Section 8.3; upstream `f2c` paper. | Starting with 10 and 20, a subroutine viewing the same `/COUNTS/` block as `FIRST` and `SECOND` adds 1 and 2; the main program observes exactly `11 22`. | Covered by `pipeline.19_named_common`. |
+| A local variable specified by `SAVE` retains its value across calls when ordinary locals are automatic. | Fortran 77 Section 8.9; upstream `f2c` manual description of `-a`. | Three calls, with explicit initialization on the first, produce exactly `1 2 3`; a narrow generated-C check confirms static storage for `COUNTER`. | Covered by `pipeline.20_saved_local`. |
+| Same-type `EQUIVALENCE` associates an integer scalar with an integer array element. | Fortran 77 Section 8.2; upstream `f2c` paper. | Assigning 99 through a scalar associated with `VALUES(2)` changes the array output from `11 22 33` to exactly `11 99 33`. | Covered by `pipeline.21_equivalence_array_element`. |
+| A `BLOCK DATA` program unit initializes a named common block before the main program observes it. | Fortran 77 Sections 8.3 and 16; upstream `f2c` paper. | Initializing `/LIMITS/ LOW, HIGH` through `BLOCK DATA` produces exactly `3 9`. | Covered by `pipeline.22_block_data_common_init`. |
+
+The saved-local case passes `-a` only for that conversion. Its generated-C
+assertion checks the single storage-duration invariant `static integer
+counter;`; it is not a complete generated-C snapshot and does not make
+formatting or unrelated declarations part of the contract.
+
+The following shared-state areas remain deferred:
+
+- blank common;
+- common declarations that differ in type, size, or alignment;
+- cross-type `EQUIVALENCE`, including character, complex, or other
+  representation-dependent associations;
+- common blocks extended through equivalence association;
+- complicated interactions among `COMMON`, `EQUIVALENCE`, `DATA`, and
+  Hollerith values;
+- direct C access to generated common-block objects or assertions about exact
+  generated structures, unions, macros, padding, and layout;
+- the `-p` option;
+- persistence and lifetime edge cases for named common blocks specified by
+  `SAVE`; and
+- independently translated source files sharing a common block, including
+  common-definition ownership, which is tracked by Issue #48.
 
 ## Basic Generated-C ABI Contract Matrix
 
@@ -263,9 +301,8 @@ not be inferred as covered by this initial matrix:
 - prototype generation and source-format options;
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - generated-C ABI variants beyond the basic contracts listed above;
-- broader numeric semantics, advanced array behavior, advanced procedure
-  behavior, character and complex values, shared state, and file-I/O
-  semantics;
+- broader numeric semantics, advanced array behavior, advanced procedure and
+  shared-state behavior, character and complex values, and file-I/O semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 
