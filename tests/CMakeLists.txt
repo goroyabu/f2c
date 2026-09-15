@@ -47,6 +47,53 @@ function(add_f2c_case name case_dir fortran_src expected_txt)
   )
 endfunction()
 
+# Add one generated-C ABI contract case with an independent C caller.
+# Usage: add_f2c_abi_case(<name> <case_dir> <fortran_src> <c_harness>
+#                        <expected_txt>)
+function(add_f2c_abi_case
+    name case_dir fortran_src c_harness expected_txt)
+  set(WORK "${CMAKE_BINARY_DIR}/tests/abi/${name}")
+  file(MAKE_DIRECTORY "${WORK}")
+
+  set(CASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cases/${case_dir}")
+  set(INPUT_F "${CASE_SOURCE_DIR}/${fortran_src}")
+  get_filename_component(_base "${fortran_src}" NAME_WE)
+  set(OUT_C "${WORK}/${_base}.c")
+  add_custom_command(
+    OUTPUT "${OUT_C}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${INPUT_F}" "${WORK}/${fortran_src}"
+    COMMAND "${CMAKE_COMMAND}" -E chdir "${WORK}"
+            "$<TARGET_FILE:f2c>" "${fortran_src}"
+    DEPENDS f2c "${INPUT_F}"
+    COMMENT "ABI translation phase: ${fortran_src} -> ${_base}.c"
+    VERBATIM)
+
+  set(_target "abi_${name}_exe")
+  add_executable("${_target}"
+    "${OUT_C}"
+    "${CASE_SOURCE_DIR}/${c_harness}")
+  target_include_directories("${_target}" PRIVATE "${GEN_DIR}")
+  target_link_libraries("${_target}" PRIVATE f2c_runtime)
+  if(ENABLE_SANITIZERS AND CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options("${_target}" PRIVATE
+      -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options("${_target}" PRIVATE -fsanitize=address,undefined)
+  endif()
+
+  add_test(
+    NAME "abi.${name}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DPROGRAM=$<TARGET_FILE:${_target}>"
+      "-DEXPECTED_STDOUT_FILE=${CASE_SOURCE_DIR}/${expected_txt}"
+      "-DWORK_DIR=${WORK}/run"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunProgramContract.cmake")
+  set_tests_properties("abi.${name}" PROPERTIES
+    LABELS "abi"
+    ENVIRONMENT "LC_ALL=C;TZ=UTC"
+    TIMEOUT 10)
+endfunction()
+
 # ---- Cases ----
 add_f2c_case(01_hello pipeline/smoke/01_hello hello.f expected.txt)
 add_f2c_case(02_print_int pipeline/smoke/02_print_int prog.f expected.txt)
@@ -81,6 +128,15 @@ add_f2c_case(17_integer_function
   semantics/procedures/17_integer_function prog.f expected.txt)
 add_f2c_case(18_array_argument
   semantics/procedures/18_array_argument prog.f expected.txt)
+
+add_f2c_abi_case(scalar_subroutine
+  abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)
+add_f2c_abi_case(integer_function
+  abi/basic/02_integer_function routine.f harness.c expected.txt)
+add_f2c_abi_case(default_real_function
+  abi/basic/03_default_real_function routine.f harness.c expected.txt)
+add_f2c_abi_case(matrix_argument
+  abi/basic/04_matrix_argument routine.f harness.c expected.txt)
 
 # Add a black-box command-line contract test.
 function(add_f2c_cli_case name)
