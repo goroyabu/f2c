@@ -1,0 +1,14 @@
+      PROGRAM CHRCMP
+      CHARACTER*2 SHORT
+      CHARACTER*3 PADDED, OTHER
+      INTEGER EQUALS, NEFLAG
+      SHORT = 'AB'
+      PADDED = 'AB '
+      OTHER = 'AC '
+      EQUALS = 0
+      NEFLAG = 0
+      IF (SHORT .EQ. PADDED) EQUALS = 1
+      IF (SHORT .NE. OTHER) NEFLAG = 1
+      WRITE (*, 100) EQUALS, NEFLAG
+  100 FORMAT (I1, 1X, I1)
+      END

@@ -79,6 +79,7 @@ cases/
 │   └── smoke/
 └── semantics/
     ├── arrays/
+    ├── character/
     ├── procedures/
     ├── scalar_control/
     └── shared_state/
@@ -264,6 +265,39 @@ The following shared-state areas remain deferred:
 - independently translated source files sharing a common block, including
   common-definition ownership, which is tracked by Issue #48.
 
+## Fixed-Length Character Contract Matrix
+
+Issue #50 adds baseline coverage for fixed-length character assignment,
+substring reference and definition, concatenation, and portable equality
+comparison. Explicit `A` fields and delimiters make trailing blanks observable;
+they are test observation mechanisms rather than representative formatted-I/O
+coverage.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| Assigning a shorter character expression blank-pads the destination on the right, while assigning a longer expression truncates it on the right. | Fortran 77 Sections 8.4 and 10.4. | Assigning `AB` and `ABCDEFG` to separate five-character variables produces exactly `[AB   ] [ABCDE]`. | Covered by `pipeline.23_character_assignment`. |
+| A substring reference denotes the inclusive range from its lower bound through its upper bound. | Fortran 77 Sections 2.7 and 5.7. | Referencing positions 2 through 4 of `ABCDE` produces exactly `[BCD]`. | Covered by `pipeline.24_substring_reference`. |
+| Assigning to a substring defines only the selected character positions. | Fortran 77 Sections 5.7 and 10.4. | Replacing positions 2 through 4 of `ABCDE` with `XYZ` produces exactly `[AXYZE]`. | Covered by `pipeline.25_substring_assignment`. |
+| Character concatenation preserves operand order and has the combined operand length. | Fortran 77 Section 6.2. | Concatenating two-character `AB` with three-character `CDE` produces exactly `[ABCDE]`. | Covered by `pipeline.26_character_concatenation`. |
+| Character equality and inequality extend the shorter operand on the right with blanks before comparing unequal-length operands. | Fortran 77 Sections 6.3.4 and 6.3.5. | Two-character `AB` compares equal to three-character `AB `, and compares unequal to `AC `, producing exactly `1 1`. | Covered by `pipeline.27_character_comparison`. |
+
+The following character areas remain deferred:
+
+- character dummy arguments and hidden-length argument conventions;
+- independent C callers for character procedures;
+- character-valued functions and their return convention;
+- assumed-length character dummy arguments;
+- character arrays and character array elements;
+- character intrinsics such as `LEN` and `INDEX`;
+- lexical ordering through `.LT.`, `.LE.`, `.GT.`, and `.GE.`;
+- ASCII lexical intrinsics such as `LGE`, `LGT`, `LLE`, and `LLT`;
+- overlapping substring assignment and other self-referential assignments;
+- Hollerith values and historical character-related extensions;
+- non-ASCII, multibyte, locale-dependent, or processor-dependent character
+  behavior;
+- command-line options that alter character or source interpretation; and
+- broader list-directed, formatted, or file-I/O behavior.
+
 ## Basic Generated-C ABI Contract Matrix
 
 Issue #45 verifies a deliberately small set of generated-C interfaces from an
@@ -302,7 +336,8 @@ not be inferred as covered by this initial matrix:
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - generated-C ABI variants beyond the basic contracts listed above;
 - broader numeric semantics, advanced array behavior, advanced procedure and
-  shared-state behavior, character and complex values, and file-I/O semantics;
+  shared-state behavior, advanced character behavior, complex values, and
+  file-I/O semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 

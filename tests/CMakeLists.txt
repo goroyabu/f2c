@@ -147,6 +147,16 @@ add_f2c_case(21_equivalence_array_element
   semantics/shared_state/21_equivalence_array_element prog.f expected.txt)
 add_f2c_case(22_block_data_common_init
   semantics/shared_state/22_block_data_common_init prog.f expected.txt)
+add_f2c_case(23_character_assignment
+  semantics/character/23_character_assignment prog.f expected.txt)
+add_f2c_case(24_substring_reference
+  semantics/character/24_substring_reference prog.f expected.txt)
+add_f2c_case(25_substring_assignment
+  semantics/character/25_substring_assignment prog.f expected.txt)
+add_f2c_case(26_character_concatenation
+  semantics/character/26_character_concatenation prog.f expected.txt)
+add_f2c_case(27_character_comparison
+  semantics/character/27_character_comparison prog.f expected.txt)
 
 add_f2c_abi_case(scalar_subroutine
   abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)

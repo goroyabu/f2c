@@ -1,0 +1,10 @@
+      PROGRAM CHRCAT
+      CHARACTER*2 LEFT
+      CHARACTER*3 RIGHT
+      CHARACTER*5 RESULT
+      LEFT = 'AB'
+      RIGHT = 'CDE'
+      RESULT = LEFT // RIGHT
+      WRITE (*, 100) RESULT
+  100 FORMAT ('[', A5, ']')
+      END
