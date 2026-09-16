@@ -80,6 +80,7 @@ cases/
 └── semantics/
     ├── arrays/
     ├── character/
+    ├── complex/
     ├── procedures/
     ├── scalar_control/
     └── shared_state/
@@ -298,6 +299,43 @@ The following character areas remain deferred:
 - command-line options that alter character or source interpretation; and
 - broader list-directed, formatted, or file-I/O behavior.
 
+## Complex and Intrinsic Contract Matrix
+
+Issue #52 adds baseline coverage for standard complex values, multiplication,
+division, and representative intrinsic-function dispatch. Each fixture names
+its intrinsic dependencies in an `INTRINSIC` statement. This is standard
+Fortran 77 and also permits an auxiliary `f2c -ext` source check without
+making `-ext` part of the runtime contract.
+
+| Contract | Basis | Observable oracle | Status |
+| --- | --- | --- | --- |
+| Assignment preserves the ordered real and imaginary components of a complex constant. | Fortran 77 Sections 4.6, 8.4.1, and 10.1. | Assigning `(3.0, -2.0)` and extracting its components with `REAL` and `AIMAG` produces exactly `[  3.0, -2.0]`. | Covered by `pipeline.28_complex_assignment_components`. |
+| Complex multiplication includes the cross terms and signs in both result components. | Fortran 77 Sections 6.1.2 and 6.1.4. | Multiplying `(1.0, 2.0)` by `(3.0, -1.0)` produces exactly `[  5.0,  5.0]`. | Covered by `pipeline.29_complex_multiplication`. |
+| Complex division produces both components for a stable nonzero divisor. | Fortran 77 Sections 6.1.2 and 6.1.4; the upstream `c_div` runtime implementation. | Dividing `(4.0, 2.0)` by `(1.0, -1.0)` produces exactly `[  1.0,  3.0]`. | Covered by `pipeline.30_complex_division`. |
+| The generic `ABS` name selects the operation and result type appropriate to integer, real, double precision, and complex arguments. | Fortran 77 Sections 15.3, 15.10, and 15.10.1. | Applying `ABS` to `-7`, `-2.5`, `-4.5D0`, and `(3.0, 4.0)` produces exactly `[ 7] [2.5] [4.5] [5.0]`. | Covered by `pipeline.31_generic_abs`. |
+| `CONJG` preserves the real component and reverses the sign of the imaginary component. | Fortran 77 Sections 15.3 and 15.10. | Conjugating `(2.0, -3.0)` produces exactly `[  2.0,  3.0]`. | Covered by `pipeline.32_complex_conjugate`. |
+| Generic `SQRT` returns the principal complex square root. | Fortran 77 Sections 15.3, 15.10, and 15.10.1. | Applying `SQRT` to `(-3.0, 4.0)` produces exactly `[  1.0,  2.0]`. | Covered by `pipeline.33_complex_square_root`. |
+
+Fixed-width formatting and component extraction make the results observable;
+they do not establish representative formatted-I/O coverage. The exact values
+avoid a tolerance-based comparison and are stable across supported platforms.
+
+The following complex and intrinsic areas remain deferred:
+
+- complex addition, subtraction, and exponentiation;
+- external complex-valued functions and generated-C return conventions;
+- independent C callers for complex procedures;
+- double-complex extensions and their ABI;
+- complex dummy arguments, arrays, `COMMON`, `EQUIVALENCE`, and `DATA`;
+- division by zero and configuration-dependent exceptional results;
+- broader transcendental intrinsics, including `EXP`, `LOG`, `SIN`, and
+  `COS`;
+- branch-cut, signed-zero, overflow, underflow, NaN, and infinity behavior;
+- approximate or tolerance-based numeric comparison infrastructure;
+- exhaustive generic and specific intrinsic-name combinations;
+- invalid intrinsic arguments and diagnostics; and
+- list-directed, formatted, and file I/O for complex values.
+
 ## Basic Generated-C ABI Contract Matrix
 
 Issue #45 verifies a deliberately small set of generated-C interfaces from an
@@ -336,8 +374,8 @@ not be inferred as covered by this initial matrix:
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - generated-C ABI variants beyond the basic contracts listed above;
 - broader numeric semantics, advanced array behavior, advanced procedure and
-  shared-state behavior, advanced character behavior, complex values, and
-  file-I/O semantics;
+  shared-state behavior, advanced character and complex behavior, and file-I/O
+  semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 
