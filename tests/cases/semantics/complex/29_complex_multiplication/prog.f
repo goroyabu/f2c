@@ -1,0 +1,12 @@
+      PROGRAM CAS29
+      COMPLEX LEFT, RIGHT, RESULT
+      REAL RPART, IPART
+      INTRINSIC REAL, AIMAG
+      LEFT = (1.0, 2.0)
+      RIGHT = (3.0, -1.0)
+      RESULT = LEFT * RIGHT
+      RPART = REAL(RESULT)
+      IPART = AIMAG(RESULT)
+      WRITE (*,100) RPART, IPART
+  100 FORMAT ('[',F5.1,',',F5.1,']')
+      END

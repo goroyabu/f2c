@@ -1,0 +1,10 @@
+      PROGRAM CAS28
+      COMPLEX VALUE
+      REAL RPART, IPART
+      INTRINSIC REAL, AIMAG
+      VALUE = (3.0, -2.0)
+      RPART = REAL(VALUE)
+      IPART = AIMAG(VALUE)
+      WRITE (*,100) RPART, IPART
+  100 FORMAT ('[',F5.1,',',F5.1,']')
+      END

@@ -157,6 +157,18 @@ add_f2c_case(26_character_concatenation
   semantics/character/26_character_concatenation prog.f expected.txt)
 add_f2c_case(27_character_comparison
   semantics/character/27_character_comparison prog.f expected.txt)
+add_f2c_case(28_complex_assignment_components
+  semantics/complex/28_complex_assignment_components prog.f expected.txt)
+add_f2c_case(29_complex_multiplication
+  semantics/complex/29_complex_multiplication prog.f expected.txt)
+add_f2c_case(30_complex_division
+  semantics/complex/30_complex_division prog.f expected.txt)
+add_f2c_case(31_generic_abs
+  semantics/complex/31_generic_abs prog.f expected.txt)
+add_f2c_case(32_complex_conjugate
+  semantics/complex/32_complex_conjugate prog.f expected.txt)
+add_f2c_case(33_complex_square_root
+  semantics/complex/33_complex_square_root prog.f expected.txt)
 
 add_f2c_abi_case(scalar_subroutine
   abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)
