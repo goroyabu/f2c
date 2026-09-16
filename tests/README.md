@@ -369,10 +369,39 @@ The following formatted and list-directed I/O areas remain deferred:
 - internal files and character-format expressions;
 - `IOSTAT=`, `ERR=`, and `END=` control flow;
 - malformed input, conversion errors, and end-of-file behavior;
-- named-file lifecycle and positioning statements;
 - direct-access and unformatted I/O; and
 - processor-, locale-, or representation-dependent formatting without a
   stable oracle.
+
+## Named Sequential File I/O Contract Matrix
+
+Issue #56 adds baseline coverage for the lifecycle of named sequential
+formatted files. Each program uses a case-local relative filename in its
+isolated build-tree working directory, reads back the values that it writes,
+and reports the semantic result through deterministic standard output. The
+tests do not treat platform-dependent physical file bytes as a contract.
+
+| Contract | Basis | Input and observable oracle | Status |
+| --- | --- | --- | --- |
+| A named sequential formatted file can be created with `STATUS='NEW'`, written, closed, reopened with `STATUS='OLD'`, and read. | Fortran 77 Sections 12.10.1 and 12.10.2. | Writing integer 12, real 3.5, and character value `HELLO` to `roundtrip.dat`, then reopening and reading them, produces exactly `[12] [3.5] [HELLO]`. | Covered by `pipeline.39_named_file_round_trip`. |
+| Separate formatted writes create sequential records that are read back in the same order. | Fortran 77 Sections 12.1, 12.2.4.1, and 12.9.6. | Writing 10, 20, and 30 as three records in `records.dat`, then reading three records, produces exactly `[10 20 30]`. | Covered by `pipeline.40_sequential_file_records`. |
+| `REWIND` positions a connected sequential file at its initial point after writing. | Fortran 77 Section 12.10.4.3. | Writing records 41 and 42 to `rewind.dat`, rewinding without closing, and reading twice produces exactly `[41 42]`. | Covered by `pipeline.41_sequential_file_rewind`. |
+
+The shared program-contract helper removes and recreates each case working
+directory before execution. This makes `STATUS='NEW'` repeatable, prevents
+parallel cases from sharing files, and keeps generated data out of tracked
+source directories.
+
+The following named-file I/O areas remain deferred:
+
+- `INQUIRE` and broader connection-property inspection;
+- `IOSTAT=`, `ERR=`, and `END=` control flow and diagnostics;
+- malformed input and end-of-file behavior;
+- `BACKSPACE` and `ENDFILE` positioning;
+- `STATUS='SCRATCH'`, deletion semantics, and temporary-file policy;
+- direct-access and unformatted files;
+- exhaustive combinations of `OPEN` specifiers; and
+- platform-specific paths, permissions, locking, and concurrent access.
 
 ## Basic Generated-C ABI Contract Matrix
 

@@ -190,6 +190,12 @@ add_f2c_case(37_list_directed_input
 add_f2c_case(38_list_directed_controls
   semantics/io/38_list_directed_controls prog.f expected.txt
   STDIN_FILE input.txt)
+add_f2c_case(39_named_file_round_trip
+  semantics/io/39_named_file_round_trip prog.f expected.txt)
+add_f2c_case(40_sequential_file_records
+  semantics/io/40_sequential_file_records prog.f expected.txt)
+add_f2c_case(41_sequential_file_rewind
+  semantics/io/41_sequential_file_rewind prog.f expected.txt)
 
 add_f2c_abi_case(scalar_subroutine
   abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)
