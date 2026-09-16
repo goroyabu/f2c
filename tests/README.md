@@ -429,8 +429,8 @@ after this baseline according to their distinct compatibility risk.
 
 ## Current Coverage Boundary
 
-The work completed under issue #31 establishes the harness, representative CLI
-and ABI contracts, and the agreed semantic baseline across the five functional
+The completed test roadmap establishes the harness, representative CLI and ABI
+contracts, and the agreed semantic baseline across the five functional
 domains. This includes basic named sequential file creation, access, record
 ordering, and positioning. The three original pipeline sentinels remain in
 place as end-to-end translation and runtime checks.
@@ -450,9 +450,9 @@ current matrix:
 - historical upstream regression candidates.
 
 The portable build workflow for independently translated sources that share a
-`COMMON` block is tracked separately in issue #48. It is a downstream build
-coordination concern rather than part of this representative semantic
-baseline.
+`COMMON` block remains outside the current supported workflow. It is a
+downstream build coordination concern rather than part of this representative
+semantic baseline.
 
 Coverage is evaluated by documented behavior category rather than by a target
 source-line percentage. Future cases should extend this matrix and state
