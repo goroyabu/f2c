@@ -427,24 +427,32 @@ separate roadmap areas. The `-R` return-mode option, names that already contain
 underscores, alternate returns, and procedure arguments will be reconsidered
 after this baseline according to their distinct compatibility risk.
 
-## Initial Coverage Boundary
+## Current Coverage Boundary
 
-Issue #34 establishes the harness and representative coverage for a normal CLI
-path, an alternate input/output path, and an error path. It also preserves the
-intent of the three existing pipeline sentinels.
+The work completed under issue #31 establishes the harness, representative CLI
+and ABI contracts, and the agreed semantic baseline across the five functional
+domains. This includes basic named sequential file creation, access, record
+ordering, and positioning. The three original pipeline sentinels remain in
+place as end-to-end translation and runtime checks.
 
-The following areas remain deferred to the parent test-strategy issue and must
-not be inferred as covered by this initial matrix:
+The following areas remain deferred and must not be inferred as covered by the
+current matrix:
 
 - multiple named inputs and output-directory selection;
 - prototype generation and source-format options;
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - generated-C ABI variants beyond the basic contracts listed above;
 - broader numeric semantics, advanced array behavior, advanced procedure and
-  shared-state behavior, advanced character, complex, and I/O behavior, and
-  named-file lifecycle semantics;
+  shared-state behavior, advanced character and complex behavior, and I/O
+  behavior beyond the documented formatted, list-directed, and named
+  sequential file contracts;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
+
+The portable build workflow for independently translated sources that share a
+`COMMON` block is tracked separately in issue #48. It is a downstream build
+coordination concern rather than part of this representative semantic
+baseline.
 
 Coverage is evaluated by documented behavior category rather than by a target
 source-line percentage. Future cases should extend this matrix and state

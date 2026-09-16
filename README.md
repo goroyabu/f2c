@@ -169,6 +169,11 @@ modify the source tree. The complete
 layout with two Fortran sources, isolated generation directories, exact output
 verification, and dependency tracking for incremental rebuilds.
 
+The example sources are independent and do not share a `COMMON` block. A
+portable workflow for coordinating `COMMON` definitions across independently
+translated sources is not currently established; that separate build concern
+is tracked in [issue #48](https://github.com/goroyabu/f2c/issues/48).
+
 When f2c is installed under a non-system prefix, pass that prefix while
 configuring the included example:
 
