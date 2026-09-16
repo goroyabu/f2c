@@ -1,0 +1,10 @@
+      PROGRAM FMTIN
+      INTEGER IVAL
+      REAL RVAL
+      LOGICAL LVAL
+      CHARACTER*5 TEXT
+      READ (*,100) IVAL, RVAL, LVAL, TEXT
+  100 FORMAT (I4,F6.2,L2,A5)
+      WRITE (*,200) IVAL, RVAL, LVAL, TEXT
+  200 FORMAT (SS,'[',I3,'] [',F3.1,'] [',L1,'] [',A5,']')
+      END

@@ -4,9 +4,11 @@ include(CTest)
 # Add one translated-program contract case.
 # Usage: add_f2c_case(<name> <case_dir> <fortran_src> <expected_txt>
 #                      [F2C_ARGS <arg>...]
-#                      [EXPECTED_C_SUBSTRING <text>])
+#                      [EXPECTED_C_SUBSTRING <text>]
+#                      [STDIN_FILE <path>])
 function(add_f2c_case name case_dir fortran_src expected_txt)
-  cmake_parse_arguments(CASE "" "EXPECTED_C_SUBSTRING" "F2C_ARGS" ${ARGN})
+  cmake_parse_arguments(CASE ""
+    "EXPECTED_C_SUBSTRING;STDIN_FILE" "F2C_ARGS" ${ARGN})
 
   # 1) Per-case working directory in the build tree (keeps source tree clean)
   set(WORK "${CMAKE_BINARY_DIR}/tests/${name}")
@@ -15,6 +17,11 @@ function(add_f2c_case name case_dir fortran_src expected_txt)
   # 2) Convert .f -> .c using the built f2c
   set(CASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cases/${case_dir}")
   set(INPUT_F "${CASE_SOURCE_DIR}/${fortran_src}")
+  if(DEFINED CASE_STDIN_FILE AND NOT CASE_STDIN_FILE STREQUAL "")
+    set(STDIN_FILE "${CASE_SOURCE_DIR}/${CASE_STDIN_FILE}")
+  else()
+    set(STDIN_FILE "")
+  endif()
   get_filename_component(_base "${fortran_src}" NAME_WE)
   set(OUT_C "${WORK}/${_base}.c")
   add_custom_command(
@@ -47,6 +54,7 @@ function(add_f2c_case name case_dir fortran_src expected_txt)
     COMMAND "${CMAKE_COMMAND}"
       "-DPROGRAM=$<TARGET_FILE:${name}_exe>"
       "-DEXPECTED_STDOUT_FILE=${CASE_SOURCE_DIR}/${expected_txt}"
+      "-DSTDIN_FILE=${STDIN_FILE}"
       "-DWORK_DIR=${WORK}/run"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunProgramContract.cmake")
   set_tests_properties("pipeline.${name}" PROPERTIES
@@ -169,6 +177,19 @@ add_f2c_case(32_complex_conjugate
   semantics/complex/32_complex_conjugate prog.f expected.txt)
 add_f2c_case(33_complex_square_root
   semantics/complex/33_complex_square_root prog.f expected.txt)
+add_f2c_case(34_formatted_output_fields
+  semantics/io/34_formatted_output_fields prog.f expected.txt)
+add_f2c_case(35_formatted_input_fields
+  semantics/io/35_formatted_input_fields prog.f expected.txt
+  STDIN_FILE input.txt)
+add_f2c_case(36_format_reversion
+  semantics/io/36_format_reversion prog.f expected.txt)
+add_f2c_case(37_list_directed_input
+  semantics/io/37_list_directed_input prog.f expected.txt
+  STDIN_FILE input.txt)
+add_f2c_case(38_list_directed_controls
+  semantics/io/38_list_directed_controls prog.f expected.txt
+  STDIN_FILE input.txt)
 
 add_f2c_abi_case(scalar_subroutine
   abi/basic/01_scalar_subroutine routine.f harness.c expected.txt)

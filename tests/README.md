@@ -81,6 +81,7 @@ cases/
     ├── arrays/
     ├── character/
     ├── complex/
+    ├── io/
     ├── procedures/
     ├── scalar_control/
     └── shared_state/
@@ -297,7 +298,7 @@ The following character areas remain deferred:
 - non-ASCII, multibyte, locale-dependent, or processor-dependent character
   behavior;
 - command-line options that alter character or source interpretation; and
-- broader list-directed, formatted, or file-I/O behavior.
+- advanced list-directed, formatted, or file-I/O behavior.
 
 ## Complex and Intrinsic Contract Matrix
 
@@ -335,6 +336,43 @@ The following complex and intrinsic areas remain deferred:
 - exhaustive generic and specific intrinsic-name combinations;
 - invalid intrinsic arguments and diagnostics; and
 - list-directed, formatted, and file I/O for complex values.
+
+## Formatted and List-Directed I/O Contract Matrix
+
+Issue #54 adds baseline coverage for explicit formatted fields, format
+reversion, and list-directed input on preconnected standard input and output.
+Cases that read data use tracked input fixtures passed through the shared
+program-contract helper; cases without an input fixture retain the previous
+execution behavior.
+
+| Contract | Basis | Input and observable oracle | Status |
+| --- | --- | --- | --- |
+| Explicit output editing applies representative integer, real, logical, and character field rules. | Fortran 77 Sections 13.5.6 and 13.5.9 through 13.5.11. | `SS`, `I5.3`, `F6.2`, `L2`, and `A5` editing of exact values produces exactly `[  007] [  2.50] [ T] [AB   ]`. | Covered by `pipeline.34_formatted_output_fields`. |
+| Explicit input editing converts fixed integer, real, logical, and character fields to their corresponding internal values. | Fortran 77 Sections 12.8, 12.9, and 13.5.9 through 13.5.11. | A tracked `I4,F6.2,L2,A5` input record is observed through a separate deterministic format as exactly `[-12] [3.5] [T] [HELLO]`. | Covered by `pipeline.35_formatted_input_fields`. |
+| Format control reverts and advances to a new record when output-list items remain after the format is exhausted. | Fortran 77 Sections 13.3, 13.4, and 13.5.4. | Writing 1, 2, and 3 with one `I2` descriptor produces three records containing exactly ` 1`, ` 2`, and ` 3`. | Covered by `pipeline.36_format_reversion`. |
+| List-directed input accepts typed free-field values separated by commas and a quoted character value containing a blank. | Fortran 77 Sections 12.8 and 13.6.1. | Reading `-7, 2.5, T, 'AB CD'` and observing the values with an explicit format produces exactly `[-7] [2.5] [T] [AB CD]`. | Covered by `pipeline.37_list_directed_input`. |
+| List-directed repetition, a null value, and slash termination define or preserve the corresponding input items. | Fortran 77 Section 13.6.1. | Reading `2*7,,/` into variables initially set to 1, 2, 3, and 4 produces exactly `[7 7 3 4]`. | Covered by `pipeline.38_list_directed_controls`. |
+
+The explicit-output fixtures use `SS` sign control, fixed field widths, and
+exactly representable numeric values so the expected text does not depend on
+optional plus signs, floating-point tolerances, or locale. List-directed
+output remains only an end-to-end smoke sentinel because its exact spacing and
+representation allow processor choices.
+
+The following formatted and list-directed I/O areas remain deferred:
+
+- exact list-directed output formatting beyond the existing smoke sentinels;
+- `E`, `D`, and `G` output variants, scale factors, and exponent-width cases;
+- positional editing through `T`, `TL`, and `TR`;
+- `BN`, `BZ`, `SP`, colon, Hollerith, and other less central descriptors;
+- complex and array I/O and implied-DO I/O lists;
+- internal files and character-format expressions;
+- `IOSTAT=`, `ERR=`, and `END=` control flow;
+- malformed input, conversion errors, and end-of-file behavior;
+- named-file lifecycle and positioning statements;
+- direct-access and unformatted I/O; and
+- processor-, locale-, or representation-dependent formatting without a
+  stable oracle.
 
 ## Basic Generated-C ABI Contract Matrix
 
@@ -374,8 +412,8 @@ not be inferred as covered by this initial matrix:
 - broader warning, diagnostic, and malformed-Fortran behavior;
 - generated-C ABI variants beyond the basic contracts listed above;
 - broader numeric semantics, advanced array behavior, advanced procedure and
-  shared-state behavior, advanced character and complex behavior, and file-I/O
-  semantics;
+  shared-state behavior, advanced character, complex, and I/O behavior, and
+  named-file lifecycle semantics;
 - differential checks against another Fortran compiler; and
 - historical upstream regression candidates.
 
