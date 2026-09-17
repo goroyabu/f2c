@@ -159,8 +159,7 @@ Temporary Items
 /generated/
 /xsum*.out
 
-# Current machine-local agent guidance and local documentation notes
-/AGENTS.md
+# Local documentation notes
 /docs/*.local.md
 
 # Ninja/CTest extras
