@@ -1,0 +1,95 @@
+name: Bug report
+description: Report a reproducible problem in the build, package, converter, or runtime
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Do not include secrets or private data.
+        Report suspected security vulnerabilities privately through the Security page instead.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem
+      description: Describe what went wrong and what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence of commands or actions that reproduces the problem.
+      placeholder: |
+        1. Configure with ...
+        2. Build with ...
+        3. Run ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: fortran-input
+    attributes:
+      label: Minimal Fortran input
+      description: If translation behavior is involved, provide the smallest input that demonstrates it.
+      render: fortran
+
+  - type: input
+    id: version
+    attributes:
+      label: f2c package version or commit
+      placeholder: v0.4.0 or a commit identifier
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: Ubuntu 24.04, macOS 15, or another environment
+    validations:
+      required: true
+
+  - type: input
+    id: compiler
+    attributes:
+      label: C compiler and version
+      placeholder: GCC 14.2, AppleClang 16.0, or another compiler
+    validations:
+      required: true
+
+  - type: input
+    id: cmake
+    attributes:
+      label: CMake version and generator
+      placeholder: CMake 3.30 with Ninja 1.12
+    validations:
+      required: true
+
+  - type: dropdown
+    id: net-fetch
+    attributes:
+      label: Source acquisition mode
+      description: Select the NET_FETCH setting used when the problem occurred.
+      options:
+        - NET_FETCH=ON
+        - NET_FETCH=OFF
+        - Not applicable or unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste the relevant configure, build, test, or runtime output after removing private data.
+      render: text
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other information that may help reproduce or understand the problem.

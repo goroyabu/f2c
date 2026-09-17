@@ -236,6 +236,15 @@ the project.
 - Cross-compilation is not currently verified because the build runs the
   generated `arithchk` host tool while creating platform-specific headers.
 
+## Contributing and Security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the project scope, development
+workflow, verification expectations, and pull request guidance.
+
+Report suspected security vulnerabilities privately by following
+[SECURITY.md](SECURITY.md). Do not include vulnerability details in a public
+Issue.
+
 ## License
 
 Repository-maintained files are available under the [MIT License](LICENSE).
