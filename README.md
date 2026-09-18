@@ -83,6 +83,7 @@ $HOME/.local/bin/f2c
 $HOME/.local/include/f2c.h
 $HOME/.local/lib/libf2c.a
 $HOME/.local/lib/cmake/f2c/
+$HOME/.local/share/man/man1/f2c.1
 ```
 
 If `$HOME/.local/bin` is not already on `PATH`:
@@ -95,6 +96,19 @@ Confirm that the installed converter is available:
 
 ```bash
 command -v f2c
+```
+
+Read the installed command-line reference with:
+
+```bash
+man f2c
+```
+
+If the manual-page directory under a custom prefix is not already in the
+system search path, add it for the command invocation:
+
+```bash
+MANPATH="$HOME/.local/share/man${MANPATH:+:$MANPATH}" man f2c
 ```
 
 ### Translate and Run a Small Program
@@ -131,7 +145,7 @@ Expected output:
  HELLO
 ```
 
-For the complete f2c command-line reference, see the
+For a browser-accessible copy of the complete command-line reference, see the
 [upstream f2c manual](https://www.netlib.org/f2c/f2c.1).
 
 ## Using the Installed CMake Package

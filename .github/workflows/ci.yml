@@ -110,6 +110,14 @@ jobs:
         if: matrix.verify_installed_package
         run: cmake --install build --prefix "${{ github.workspace }}/stage"
 
+      - name: Verify installed manual page
+        if: matrix.verify_installed_package
+        run: |
+          cmake \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -DINSTALL_MANIFEST="${{ github.workspace }}/build/install_manifest.txt" \
+            -P tests/cmake/VerifyInstalledManual.cmake
+
       - name: Verify installed package with CMake example
         if: matrix.verify_installed_package
         run: |
@@ -126,6 +134,14 @@ jobs:
             -DF2C_PREFIX="${{ github.workspace }}/stage" \
             -DTEST_ROOT="${{ github.workspace }}/build/package-example-incremental" \
             -P tests/package_example/RunIncrementalBuildTest.cmake
+
+      - name: Verify uninstall
+        if: matrix.verify_installed_package
+        run: |
+          cmake \
+            -DBUILD_DIR="${{ github.workspace }}/build" \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -P tests/cmake/VerifyUninstall.cmake
 
   offline-build-and-test:
     name: Offline build and test (ubuntu-24.04 gcc)
@@ -165,6 +181,13 @@ jobs:
       - name: Install
         run: cmake --install build --prefix "${{ github.workspace }}/stage"
 
+      - name: Verify installed manual page
+        run: |
+          cmake \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -DINSTALL_MANIFEST="${{ github.workspace }}/build/install_manifest.txt" \
+            -P tests/cmake/VerifyInstalledManual.cmake
+
       - name: Verify installed package with CMake example
         run: |
           cmake -S examples/cmake -B build/package-example \
@@ -179,3 +202,10 @@ jobs:
             -DF2C_PREFIX="${{ github.workspace }}/stage" \
             -DTEST_ROOT="${{ github.workspace }}/build/package-example-incremental" \
             -P tests/package_example/RunIncrementalBuildTest.cmake
+
+      - name: Verify uninstall
+        run: |
+          cmake \
+            -DBUILD_DIR="${{ github.workspace }}/build" \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -P tests/cmake/VerifyUninstall.cmake
