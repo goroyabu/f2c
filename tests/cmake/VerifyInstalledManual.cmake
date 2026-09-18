@@ -47,7 +47,8 @@ if(_mandoc)
     ERROR_VARIABLE _render_stderr)
 elseif(_groff)
   execute_process(
-    COMMAND "${_groff}" -man -Tascii "${_manual}"
+    COMMAND "${CMAKE_COMMAND}" -E env "GROFF_NO_SGR=1"
+            "${_groff}" -man -Tascii "${_manual}"
     RESULT_VARIABLE _render_result
     OUTPUT_VARIABLE _rendered
     ERROR_VARIABLE _render_stderr)
