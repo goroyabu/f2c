@@ -257,6 +257,9 @@ write_basic_package_version_file(
 install(TARGETS f2c EXPORT f2cTargets RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(TARGETS f2c_runtime EXPORT f2cTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES "${GEN_DIR}/f2c.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES "${F2C_SRC_DIR}/f2c.1t"
+  DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
+  RENAME f2c.1)
 
 # Export stubs for future packaging
 
