@@ -31,4 +31,3 @@ assert_pkgconfig_path(
 assert_pkgconfig_path(
   absolute_pc_dir "/opt/f2c/include"
   "/srv/pkgconfig" "include" "/opt/f2c")
-

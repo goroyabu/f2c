@@ -9,4 +9,3 @@ Version: @PROJECT_VERSION@
 Libs: -L${libdir} -lf2c
 Libs.private: @F2C_PC_PRIVATE_LIBS@
 Cflags: -I${includedir}
-
