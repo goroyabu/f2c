@@ -5,6 +5,17 @@ include(CTest)
 
 find_package(f2c CONFIG REQUIRED)
 
+foreach(required_variable IN ITEMS F2C_VERSION_STRING F2C_UPSTREAM_VERSION)
+  if(NOT DEFINED ${required_variable} OR "${${required_variable}}" STREQUAL "")
+    message(FATAL_ERROR
+      "The installed package does not define ${required_variable}")
+  endif()
+endforeach()
+
+# Package compatibility remains based on this repository's release version,
+# not the upstream translator date.
+find_package(f2c "${F2C_VERSION_STRING}" EXACT CONFIG REQUIRED)
+
 foreach(required_target IN ITEMS f2c::f2c f2c::f2c_runtime)
   if(NOT TARGET "${required_target}")
     message(FATAL_ERROR "The installed package does not provide ${required_target}")
@@ -55,5 +66,15 @@ add_test(
     "-DPROGRAM=$<TARGET_FILE:f2c_cmake_example>"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/RunAndCompare.cmake")
 set_tests_properties(f2c_cmake_example.run PROPERTIES
+  ENVIRONMENT "LC_ALL=C;TZ=UTC"
+  TIMEOUT 10)
+
+add_test(
+  NAME f2c_cmake_example.package_versions
+  COMMAND "${CMAKE_COMMAND}"
+    "-DF2C_PROGRAM=$<TARGET_FILE:f2c::f2c>"
+    "-DEXPECTED_UPSTREAM_VERSION=${F2C_UPSTREAM_VERSION}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/VerifyPackageVersions.cmake")
+set_tests_properties(f2c_cmake_example.package_versions PROPERTIES
   ENVIRONMENT "LC_ALL=C;TZ=UTC"
   TIMEOUT 10)
