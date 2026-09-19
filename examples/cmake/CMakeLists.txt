@@ -22,6 +22,11 @@ foreach(required_target IN ITEMS f2c::f2c f2c::f2c_runtime)
   endif()
 endforeach()
 
+if(DEFINED F2C_EXPECTED_PREFIX AND NOT F2C_EXPECTED_PREFIX STREQUAL "")
+  include("${CMAKE_CURRENT_SOURCE_DIR}/VerifyResolvedPrefix.cmake")
+  f2c_verify_resolved_prefix("${F2C_EXPECTED_PREFIX}")
+endif()
+
 if(UNIX)
   get_target_property(runtime_link_libraries
     f2c::f2c_runtime INTERFACE_LINK_LIBRARIES)
