@@ -26,6 +26,12 @@ assert_pkgconfig_path(
   multi_level "\${pcfiledir}/.." "lib/test-triplet/pkgconfig"
   "lib/test-triplet" "/opt/f2c")
 assert_pkgconfig_path(
+  multi_level_prefix "\${pcfiledir}/../../.."
+  "lib/test-triplet/pkgconfig" "." "/opt/f2c")
+assert_pkgconfig_path(
+  multi_level_includedir "\${pcfiledir}/../../../include"
+  "lib/test-triplet/pkgconfig" "include" "/opt/f2c")
+assert_pkgconfig_path(
   absolute_destination "/srv/f2c/include"
   "lib/pkgconfig" "/srv/f2c/include" "/opt/f2c")
 assert_pkgconfig_path(
