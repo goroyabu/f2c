@@ -15,6 +15,7 @@ downstream CMake integration.
 - The public `f2c.h` header
 - An installed CMake package with the `f2c::f2c` converter target and the
   `f2c::f2c_runtime` library target
+- Installed `pkg-config` metadata for the static `libf2c` runtime
 - End-to-end converter/runtime smoke tests
 - Linux and macOS CI with GCC, Clang, AppleClang, and sanitizer coverage
 - Online source acquisition by default, with an optional offline workflow
@@ -82,6 +83,7 @@ This installs the following primary artifacts on conventional Unix systems:
 $HOME/.local/bin/f2c
 $HOME/.local/include/f2c.h
 $HOME/.local/lib/libf2c.a
+$HOME/.local/lib/pkgconfig/libf2c.pc
 $HOME/.local/lib/cmake/f2c/
 $HOME/.local/share/man/man1/f2c.1
 ```
@@ -147,6 +149,31 @@ Expected output:
 
 For a browser-accessible copy of the complete command-line reference, see the
 [upstream f2c manual](https://www.netlib.org/f2c/f2c.1).
+
+## Using the Installed pkg-config Module
+
+The installed `libf2c` module describes the static runtime library and its
+public header. It does not represent the separate `f2c` converter executable.
+
+When installing under a non-system prefix, make the module visible to
+`pkg-config` or `pkgconf`:
+
+```bash
+export PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+```
+
+Translate the Fortran source with `f2c`, then compile and statically link the
+generated C source using the module's public and private link requirements:
+
+```bash
+f2c hello.f
+cc hello.c $(pkg-config --cflags --static --libs libf2c) -o hello
+./hello
+```
+
+The module version is this repository's package version. It is distinct from
+the date-based upstream translator version reported through the installed
+CMake package.
 
 ## Using the Installed CMake Package
 

@@ -87,7 +87,9 @@ ctest --test-dir build-offline --output-on-failure
 Run additional checks according to the change:
 
 - installation or exported-target changes should verify a staged installation
-  and the downstream project under `examples/cmake`;
+  and the downstream project under `examples/cmake`; changes to `pkg-config`
+  metadata should also verify a relocated staged prefix with
+  `tests/pkg_config/VerifyInstalledPkgConfig.cmake`;
 - source-acquisition changes should verify both online and strict offline
   configurations;
 - generated-code or runtime changes should run the relevant semantic and ABI
