@@ -18,7 +18,8 @@ if(TEST_CASE STREQUAL "valid")
   set(_expected_text "UPSTREAM_VERSION=20240504")
 elseif(TEST_CASE STREQUAL "missing_version_file")
   file(WRITE "${TEST_ROOT}/input/src/README" "no version source\n")
-  set(_expected_text "does not contain src/version.c")
+  set(_expected_text
+    "Could not extract src/version.c from the upstream f2c archive.")
 elseif(TEST_CASE STREQUAL "malformed_declaration")
   file(WRITE "${TEST_ROOT}/input/src/version.c"
     "char F2C_version[] = \"development\";\n")
@@ -67,7 +68,8 @@ elseif(NOT _expect_success AND _result EQUAL 0)
   message(FATAL_ERROR "Expected failure, but parsing succeeded:\n${_output}")
 endif()
 
-string(FIND "${_output}" "${_expected_text}" _match)
+string(REGEX REPLACE "[\r\n\t ]+" " " _normalized_output "${_output}")
+string(FIND "${_normalized_output}" "${_expected_text}" _match)
 if(_match EQUAL -1)
   message(FATAL_ERROR
     "Expected output to contain '${_expected_text}', got:\n${_output}")
