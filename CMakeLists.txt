@@ -299,5 +299,10 @@ add_download_cleanup_target(clean_downloads)
 # --- Enable tests ---
 include(CTest)
 if(BUILD_TESTING)
+  file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tests/pkg_config")
+  configure_file(
+    "${CMAKE_SOURCE_DIR}/tests/pkg_config/PackageExpectations.cmake.in"
+    "${CMAKE_BINARY_DIR}/tests/pkg_config/PackageExpectations.cmake"
+    @ONLY)
   add_subdirectory(tests)
 endif()
