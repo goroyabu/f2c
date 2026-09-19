@@ -203,6 +203,17 @@ the static runtime library, and the platform math-library link requirement on
 supported Unix systems. Cross-build host-tool handling is not currently
 verified, so the example documents a native-build workflow only.
 
+After `find_package(f2c CONFIG REQUIRED)`, the package also defines two version
+variables with deliberately different meanings:
+
+- `F2C_VERSION_STRING` is this repository's package release version and is the
+  version used by `find_package` compatibility checks.
+- `F2C_UPSTREAM_VERSION` is the version reported by the upstream `f2c`
+  translator included in the verified source archive.
+
+The internal `LIBF77` and `LIBI77` component dates are not exposed as a unified
+`libf2c` version because upstream does not define one.
+
 ## Offline Build
 
 Offline building is supported as a secondary workflow. Place these files under

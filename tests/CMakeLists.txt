@@ -288,3 +288,22 @@ add_archive_hash_test(valid_archive_allowed_mode_warning)
 add_archive_hash_test(no_fallback_after_mismatch_allowed)
 add_archive_hash_test(missing_input_allowed)
 add_archive_hash_test(download_failure_allowed)
+
+# Verify upstream translator version extraction with synthetic archives.
+function(add_upstream_version_test case_name)
+  add_test(
+    NAME "upstream_version.${case_name}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DTEST_CASE=${case_name}"
+      "-DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/upstream-version-tests/${case_name}"
+      "-DREAD_VERSION_MODULE=${PROJECT_SOURCE_DIR}/cmake/ReadF2cUpstreamVersion.cmake"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/upstream_version/RunUpstreamVersionTest.cmake")
+  set_tests_properties("upstream_version.${case_name}" PROPERTIES
+    LABELS "upstream-metadata"
+    TIMEOUT 30)
+endfunction()
+
+add_upstream_version_test(valid)
+add_upstream_version_test(missing_version_file)
+add_upstream_version_test(malformed_declaration)
+add_upstream_version_test(duplicate_declaration)

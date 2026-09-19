@@ -113,6 +113,12 @@ build configuration. Do not change a pinned hash merely to make an unexpected
 archive pass verification. An upstream refresh must review the source change,
 version information, notices, and resulting build and test behavior together.
 
+The upstream translator version is parsed from `src/version.c` in the selected,
+verified `src.tgz` and exported to CMake consumers as `F2C_UPSTREAM_VERSION`.
+When refreshing that archive, verify the focused `upstream_version.*` tests and
+the staged `examples/cmake` package test so that the archive metadata, installed
+package configuration, and `f2c --version` output remain consistent.
+
 `F2C_ALLOW_UNVERIFIED_ARCHIVES=ON` is limited to deliberate local experiments.
 Do not use it as verification for a pull request, CI run, or release. Return the
 build directory to strict verification after the experiment.

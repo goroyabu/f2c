@@ -24,6 +24,12 @@ set(F2C_SRC_URL     "https://www.netlib.org/f2c/src.tgz")
 set(F2C_SRC_SHA256  "b2824a6f7b75ffe0193ce9ba55463191a7af7c2ffe10e371e372451e2b527e09")
 set(F2C_SRC_LOCAL   "${ARCHIVE_DIR}/src.tgz")
 resolve_input_file(F2C_SRC_TGZ  "${F2C_SRC_URL}"  "${F2C_SRC_SHA256}"  "${F2C_SRC_LOCAL}")
+include(ReadF2cUpstreamVersion)
+read_f2c_upstream_version(
+  F2C_UPSTREAM_VERSION
+  "${F2C_SRC_TGZ}"
+  "${CMAKE_BINARY_DIR}/upstream-metadata/f2c")
+message(STATUS "Upstream f2c translator version: ${F2C_UPSTREAM_VERSION}")
 add_unpack_archive("${F2C_SRC_ROOT}.stamp" "${F2C_SRC_ROOT}" "${F2C_SRC_TGZ}"
   COMMENT "Unpacking src.tgz"
   COMMAND ${CMAKE_COMMAND} -E tar xzf)
