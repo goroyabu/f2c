@@ -1,6 +1,13 @@
 # Comments and messages are written in English for maintainability.
 include(CTest)
 
+add_test(
+  NAME pkg_config.paths
+  COMMAND "${CMAKE_COMMAND}"
+    "-DHELPER_FILE=${CMAKE_SOURCE_DIR}/cmake/PkgConfigPaths.cmake"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/pkg_config/TestPkgConfigPaths.cmake")
+set_tests_properties(pkg_config.paths PROPERTIES LABELS "pkg_config")
+
 # Add one translated-program contract case.
 # Usage: add_f2c_case(<name> <case_dir> <fortran_src> <expected_txt>
 #                      [F2C_ARGS <arg>...]

@@ -141,6 +141,8 @@ jobs:
             -DSOURCE_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/hello.f" \
             -DEXPECTED_STDOUT_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/expected.txt" \
             -DC_COMPILER="${{ matrix.cc }}" \
+            -DSOURCE_ROOT="${{ github.workspace }}" \
+            -DBUILD_ROOT="${{ github.workspace }}/build" \
             -DTEST_ROOT="${{ github.workspace }}/build/pkg-config-consumer" \
             -DREQUIRE_PKG_CONFIG=${{ matrix.require_pkg_config }} \
             -P tests/pkg_config/VerifyInstalledPkgConfig.cmake
@@ -223,6 +225,8 @@ jobs:
             -DSOURCE_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/hello.f" \
             -DEXPECTED_STDOUT_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/expected.txt" \
             -DC_COMPILER="${CC}" \
+            -DSOURCE_ROOT="${{ github.workspace }}" \
+            -DBUILD_ROOT="${{ github.workspace }}/build" \
             -DTEST_ROOT="${{ github.workspace }}/build/pkg-config-consumer" \
             -DREQUIRE_PKG_CONFIG=ON \
             -P tests/pkg_config/VerifyInstalledPkgConfig.cmake

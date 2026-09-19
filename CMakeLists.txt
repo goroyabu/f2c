@@ -11,10 +11,12 @@ option(F2C_ALLOW_UNVERIFIED_ARCHIVES
   "Allow SHA256-mismatched upstream archives for local experiments" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(PkgConfigPaths)
 include(FetchAndUnpack)
 fetch_and_unpack_configure_dirs()
 
 set(PACKAGE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+set(PKG_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
 set(VENDOR_ROOT "${CMAKE_BINARY_DIR}/vendor")
 
@@ -257,6 +259,26 @@ write_basic_package_version_file(
   COMPATIBILITY SameMajorVersion
 )
 
+f2c_pkgconfig_path(F2C_PC_PREFIX
+  "${PKG_CONFIG_INSTALL_DIR}" "." "${CMAKE_INSTALL_PREFIX}")
+f2c_pkgconfig_path(F2C_PC_LIBDIR
+  "${PKG_CONFIG_INSTALL_DIR}"
+  "${CMAKE_INSTALL_LIBDIR}"
+  "${CMAKE_INSTALL_PREFIX}")
+f2c_pkgconfig_path(F2C_PC_INCLUDEDIR
+  "${PKG_CONFIG_INSTALL_DIR}"
+  "${CMAKE_INSTALL_INCLUDEDIR}"
+  "${CMAKE_INSTALL_PREFIX}")
+if(UNIX)
+  set(F2C_PC_PRIVATE_LIBS "-lm")
+else()
+  set(F2C_PC_PRIVATE_LIBS "")
+endif()
+configure_file(
+  "${CMAKE_SOURCE_DIR}/cmake/libf2c.pc.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/libf2c.pc"
+  @ONLY)
+
 # ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
@@ -274,6 +296,8 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/f2cConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/f2cConfigVersion.cmake"
   DESTINATION ${PACKAGE_CONFIG_INSTALL_DIR})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libf2c.pc"
+  DESTINATION "${PKG_CONFIG_INSTALL_DIR}")
 
 # ---------------------------------------------------------------------------
 # Uninstall target

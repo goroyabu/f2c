@@ -5,6 +5,8 @@ foreach(required_var IN ITEMS
     SOURCE_FILE
     EXPECTED_STDOUT_FILE
     C_COMPILER
+    SOURCE_ROOT
+    BUILD_ROOT
     TEST_ROOT)
   if(NOT DEFINED ${required_var} OR "${${required_var}}" STREQUAL "")
     message(FATAL_ERROR "${required_var} is required")
@@ -46,7 +48,8 @@ if(EXPECTED_UNIX)
 endif()
 
 foreach(forbidden_path IN ITEMS
-    "${CMAKE_CURRENT_LIST_DIR}"
+    "${SOURCE_ROOT}"
+    "${BUILD_ROOT}"
     "${INSTALL_PREFIX}")
   string(FIND "${_pc_contents}" "${forbidden_path}" _position)
   if(NOT _position EQUAL -1)
@@ -87,7 +90,7 @@ execute_process(
 if(NOT _version_result EQUAL 0)
   message(FATAL_ERROR "pkg-config version query failed: ${_version_error}")
 endif()
-if(NOT _reported_version STREQUAL EXPECTED_PACKAGE_VERSION)
+if(NOT "${_reported_version}" STREQUAL "${EXPECTED_PACKAGE_VERSION}")
   message(FATAL_ERROR
     "pkg-config reported version '${_reported_version}', expected "
     "'${EXPECTED_PACKAGE_VERSION}'")
@@ -165,7 +168,7 @@ if(NOT _run_result EQUAL 0)
     "pkg-config consumer failed with exit ${_run_result}: ${_actual_stderr}")
 endif()
 file(READ "${EXPECTED_STDOUT_FILE}" _expected_stdout)
-if(NOT _actual_stdout STREQUAL _expected_stdout)
+if(NOT "${_actual_stdout}" STREQUAL "${_expected_stdout}")
   message(FATAL_ERROR
     "pkg-config consumer output mismatch.\n"
     "Expected:\n${_expected_stdout}\nActual:\n${_actual_stdout}")
