@@ -164,6 +164,39 @@ jobs:
             -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
             -P tests/cmake/VerifyUninstall.cmake
 
+  installed-package-isolation:
+    name: Installed package isolation (ubuntu-24.04 gcc)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    env:
+      CC: gcc
+      CXX: g++
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Prepare verified upstream archives
+        run: |
+          mkdir -p "${RUNNER_TEMP}/f2c-install-isolation-inputs"
+          curl --fail --show-error --location --retry 3 \
+            https://www.netlib.org/f2c/src.tgz \
+            --output "${RUNNER_TEMP}/f2c-install-isolation-inputs/src.tgz"
+          curl --fail --show-error --location --retry 3 \
+            https://www.netlib.org/f2c/libf2c.zip \
+            --output "${RUNNER_TEMP}/f2c-install-isolation-inputs/libf2c.zip"
+
+      - name: Verify installed CMake package in isolation
+        run: |
+          cmake \
+            -DSOURCE_ROOT="${GITHUB_WORKSPACE}" \
+            -DTEST_ROOT="${RUNNER_TEMP}/f2c-install-isolation" \
+            -DSRC_ARCHIVE="${RUNNER_TEMP}/f2c-install-isolation-inputs/src.tgz" \
+            -DLIBF2C_ARCHIVE="${RUNNER_TEMP}/f2c-install-isolation-inputs/libf2c.zip" \
+            -DC_COMPILER="$(command -v gcc)" \
+            -P tests/install_isolation/RunInstallIsolationTest.cmake
+
   offline-build-and-test:
     name: Offline build and test (ubuntu-24.04 gcc)
     runs-on: ubuntu-24.04
