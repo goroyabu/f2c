@@ -31,6 +31,7 @@ jobs:
             cmake_version: ""
             enable_sanitizers: OFF
             verify_installed_package: true
+            require_pkg_config: true
             lsan_options: ""
           - name: ubuntu-24.04 clang+sanitizers
             os: ubuntu-24.04
@@ -39,6 +40,7 @@ jobs:
             cmake_version: ""
             enable_sanitizers: ON
             verify_installed_package: false
+            require_pkg_config: false
             lsan_options: detect_leaks=0
           - name: ubuntu-22.04 gcc
             os: ubuntu-22.04
@@ -47,6 +49,7 @@ jobs:
             cmake_version: "3.20.6"
             enable_sanitizers: OFF
             verify_installed_package: true
+            require_pkg_config: true
             lsan_options: ""
           - name: macos-15 apple-clang
             os: macos-15
@@ -55,6 +58,7 @@ jobs:
             cmake_version: ""
             enable_sanitizers: OFF
             verify_installed_package: true
+            require_pkg_config: false
             lsan_options: ""
           - name: macos-14 apple-clang
             os: macos-14
@@ -63,6 +67,7 @@ jobs:
             cmake_version: ""
             enable_sanitizers: OFF
             verify_installed_package: true
+            require_pkg_config: false
             lsan_options: ""
 
     env:
@@ -125,6 +130,22 @@ jobs:
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
           cmake --build build/package-example --parallel
           ctest --test-dir build/package-example --output-on-failure
+
+      - name: Verify installed pkg-config package
+        if: matrix.verify_installed_package
+        run: |
+          cmake \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -DINSTALL_MANIFEST="${{ github.workspace }}/build/install_manifest.txt" \
+            -DPACKAGE_EXPECTATIONS="${{ github.workspace }}/build/tests/pkg_config/PackageExpectations.cmake" \
+            -DSOURCE_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/hello.f" \
+            -DEXPECTED_STDOUT_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/expected.txt" \
+            -DC_COMPILER="${{ matrix.cc }}" \
+            -DSOURCE_ROOT="${{ github.workspace }}" \
+            -DBUILD_ROOT="${{ github.workspace }}/build" \
+            -DTEST_ROOT="${{ github.workspace }}/build/pkg-config-consumer" \
+            -DREQUIRE_PKG_CONFIG=${{ matrix.require_pkg_config }} \
+            -P tests/pkg_config/VerifyInstalledPkgConfig.cmake
 
       - name: Verify Fortran changes trigger regeneration
         if: matrix.verify_installed_package
@@ -194,6 +215,21 @@ jobs:
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
           cmake --build build/package-example --parallel
           ctest --test-dir build/package-example --output-on-failure
+
+      - name: Verify installed pkg-config package
+        run: |
+          cmake \
+            -DINSTALL_PREFIX="${{ github.workspace }}/stage" \
+            -DINSTALL_MANIFEST="${{ github.workspace }}/build/install_manifest.txt" \
+            -DPACKAGE_EXPECTATIONS="${{ github.workspace }}/build/tests/pkg_config/PackageExpectations.cmake" \
+            -DSOURCE_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/hello.f" \
+            -DEXPECTED_STDOUT_FILE="${{ github.workspace }}/tests/cases/pipeline/smoke/01_hello/expected.txt" \
+            -DC_COMPILER="${CC}" \
+            -DSOURCE_ROOT="${{ github.workspace }}" \
+            -DBUILD_ROOT="${{ github.workspace }}/build" \
+            -DTEST_ROOT="${{ github.workspace }}/build/pkg-config-consumer" \
+            -DREQUIRE_PKG_CONFIG=ON \
+            -P tests/pkg_config/VerifyInstalledPkgConfig.cmake
 
       - name: Verify Fortran changes trigger regeneration
         run: |
